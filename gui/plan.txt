@@ -1,0 +1,179 @@
+camera states: current, requested
+
+
+gui state    (s_cam0 vs s_cam1 to determine what goes to buffer)
+ =>
+  buffered state  = s_cmdmap
+=>
+    sent to cam, not ackd (one at a time)
+
+
+on gui change:
+   update requested state
+     immediate-mode: start timer (or extend running timer)
+     disconnected-mode: nothing
+
+on timerexpires:
+   sync state send diffs, >sending
+
+camera sync state:
+   init:
+      disable controls,
+              if have comm port: >connecting
+              else: >disconnected
+   disconnected:
+      enter: nop
+      change comm port cfg: >connecting
+   connecting:
+      enter: start timer, start reader thread
+      got connected event from reader: kill timer, >discover
+      got open fail from reader: kill timer, >disconnected
+      timeout: fatal?
+   discover
+      enter: send enq, start timer, >discovering
+   discovering
+      got ack: kill timer, >reading
+      timeout: >discover; after N timeouts: kill reader, >disconnected
+   reading
+      enter: fetch summary, start timer
+      got settings: kill timer, update cam state, enable gui, >up-to-date
+      timeout: > discovering (?)
+   sending1
+      enter: start timer
+      got ack: restart timer, >sending2
+      timeout: >discovering
+   sending2
+      enter: start timer
+      got response: kill timer, send ack, >uptodate
+      timeout: >discovering
+   up-to-date:
+      enter: if cmd buffered, send it, start timer, >sending1
+   shutting-down:
+
+update-pending
+
+integration
+
+   on start btn presseed: int-init1:
+       change btn label to "stop"
+       disable controls except stop
+       > int-init
+
+   int-init1
+      btn lable "stop"
+      disable ctrls
+      >init2
+
+   int-init2
+       if buffered commands
+           done
+       else
+           >int-capture3
+
+   int-int1:
+       start timer (for integration)
+       >int-int2
+
+   int-int2:
+       timer expires: >int-capture1
+       stop: > int-stop
+
+   int-capture1:
+       send sync=int              ("integrate")
+       start timer (175ms)
+       > int-capture2
+
+   int-capture2:
+       timeout: got_timeout=1, if got_Ack, > int-capture2 else > int-capture1
+       got ack: got_Ack=1; if got_timeout > int-capture2
+
+   int-capture3:
+       enter:
+             send sync = vbs  ("grab")
+             start timer for ack
+
+   int-capture4:
+       got ack: kill timer, >int-int
+       timeout: send sync = vbs, start timer
+       stop: > int-done
+
+   int-stop1:
+       enter: send sync=int, start timer
+
+   int-stop2:
+       got ack: >int-done
+       timeout: > int-stop
+
+   int-done:
+       enter: enable ctrls, >up-to-date
+
+
+-------
+
+camera io:
+
+fd reader thread
+  waits on fd
+  queues message to main thread
+
+main thread:
+  writes to fd
+
+
+
+--------
+
+enable controls:
+
+  m_senseUp == 12, enable integration else disable
+
+  atw enabled:
+     disable wtbR wtbB awcSet
+
+  awc enabled
+     disable wtbRed wtbBlue
+     enable awcSet
+
+  wtbRB:
+     enable wtbRed wtbBlue
+     disable awcSet
+
+--------
+
+agc change timer:
+
+   agc scrolled
+      > agc-wait
+
+   agc_wait_init:
+      (re)start agc timer 3s?
+
+   agc-wait1:
+      timer expired && no-queued-commands
+          send new agc val
+          if new-agc
+              > agc-wait2
+          else
+              > agc-stable
+
+   agc-wait2:
+      disable controls
+      agc_wait_cancel_clicked = false
+      start timer (repeating)
+      > agc-wait3
+
+   agc-wait3:
+      timer-expired:
+         update status
+         if done waiting
+             >agc-wait-cleanup
+      cancel-clicked
+         > cleanup
+
+   agc-wait-cleanup
+      clear status
+      enable controls
+      >agc-stable
+
+   agc-stable:
+      nop

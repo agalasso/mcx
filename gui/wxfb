@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec /home/andy/Incoming/wxformbuilder/trunk/output/bin/wxformbuilder &

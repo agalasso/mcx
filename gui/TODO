@@ -1,0 +1,34 @@
+(x) remove alc/elc btns
+ alc != off, set elc = off
+ elc != off, set alc = off
+
+(x) remove AGC man/auto btns
+ man != off set auto = off
+ auto != off set man = off
+
+(x) add chkbox for negative
+
+(x) wtb
+   disable r/b sliders unless r/b selected
+   disable awc set unless awc selected
+
+(x) too tall
+
+( ) integration - remember last 3-4 manually typed vals
+
+(x) get rid of checkboxes, use toolbar
+
+( ) bitmaps:
+DSO
+Planet
+Lunar
+Load
+Save
+Cross Hairs
+Cross Box
+Color Bars
+Horz flip
+Vert Flip
+Negative
+Freeze frame
+CCD mode
