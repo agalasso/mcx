@@ -4,10 +4,18 @@ CXXFLAGS := `$(WXCONFIG) --cxxflags` -fPIC -g
 WXLIBS := `$(WXCONFIG) --libs --debug=yes`
 TARGET := sim
 
+UNAME_O = $(shell uname -o)
+ifeq ($(UNAME_O), Msys)
+  OS := win
+  MCX_RES := mcx.res
+else ifeq ($(UNAME_O), GNU/Linux)
+  OS := linux
+endif
+
 all: mcx
 
 clean:
-	 rm -f mcx *.o
+	 rm -f mcx *.o mcx.res
 
 fb:
 	/home/andy/Incoming/wxformbuilder/trunk/output/bin/wxformbuilder MCXx.fbp
@@ -27,7 +35,10 @@ mcxcomm.o: mcxcomm.cpp
 mcxcomm_$(TARGET).o: mcxcomm_$(TARGET).cpp
 	`$(WXCONFIG) --cxx` -c $(CXXFLAGS) -o $@ $<
 
-mcx: main.o mcxgui.o crc16.o mcxcomm.o mcxcomm_$(TARGET).o
+mcx.res: mcx.rc mcx.exe.manifest
+	windres --input $< --output $@ --output-format=coff
+
+mcx: main.o mcxgui.o crc16.o mcxcomm.o mcxcomm_$(TARGET).o $(MCX_RES)
 	`$(WXCONFIG) --ld` $@ $^ $(WXLIBS)
 
 run: mcx
