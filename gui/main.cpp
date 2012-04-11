@@ -7,6 +7,7 @@
 // TODO: resend mcx message if not acked?
 // TODO: accept varios integration time formats  2m 2:30 2.5m
 //
+// TODO: fix toolbar background
 // TODO: 3 minute agc change timer, + how to cancel it?
 // TODO: integration fsm
 // crash when integrating hit exit
