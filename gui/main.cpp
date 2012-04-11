@@ -1,12 +1,12 @@
 // TODO: disable controls disable labels to make more obvious?
 // TODO: top button functions
-// TODO: svn
 // TODO: camera comm for windows
 // TODO: config window (comm port, anything else?)
 // TODO: app icon
 // TODO: resend mcx message if not acked?
 // TODO: accept varios integration time formats  2m 2:30 2.5m
 //
+// TODO: git
 // TODO: 3 minute agc change timer, + how to cancel it?
 // TODO: integration fsm
 // crash when integrating hit exit
