@@ -31,7 +31,7 @@ struct msg
 
 extern bool mcxcomm_init();
 extern void mcxcmd_set(msg *msg, u8 item, const u8 *data, size_t len);
-extern void mcxcmd_get(msg *msg, u8 item);
+extern void mcxcmd_get(msg *msg, u8 item, u8 subitem = 0, u8 subsubitem = 0);
 extern void mcxcmd_dump(char *buf, size_t len, const msg *msg);
 
 extern bool mcxcomm_connect(const char *filename);

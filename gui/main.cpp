@@ -1,12 +1,20 @@
 // TODO: disable controls disable labels to make more obvious?
 // TODO: top button functions
-// TODO: camera comm for windows
+//     load/save/presets
+//     ccd mode
+//     sleep camera
 // TODO: config window (comm port, anything else?)
 // TODO: app icon and window title
 // TODO: resend mcx message if not acked?
 // TODO: accept varios integration time formats  2m 2:30 2.5m
 // TODO: fix window height
+// title pos buttons
+// send empty title (not just turn off); or, send new title before title on
+// TODO:save full mask, not just mask type
+// TODO: get rid of cross hairs
+// TODO: toggle cross bars selected when read cam settings and find mask enabled
 //
+// TODO: camera comm for windows
 // TODO: fix toolbar background
 // TODO: git
 // TODO: 3 minute agc change timer, + how to cancel it?
@@ -68,8 +76,9 @@ enum EnableType {
 enum {
   DEFERRED_EVENT_INTERVAL = 1000, // milliseconds
 
-  ACK_TIMEOUT_MS = 5000,
-  RESPONSE_TIMEOUT_MS = 10000,
+  ACK_TIMEOUT_MS = 1000,
+  RESPONSE_TIMEOUT_MS = 5000,
+  COMMAND_DELAY_MS = 200,
 
   AGC_WAIT_MS = 3 * 60 * 1000, // how long to wait after agc change
 };
@@ -83,6 +92,7 @@ enum CameraState {
   CAM_READING2,
   CAM_SENDING1,
   CAM_SENDING2,
+  CAM_DELAY,
   CAM_UPTODATE,
   CAM_SHUTTING_DOWN,
 };
@@ -167,13 +177,18 @@ static Config s_cfg;
 //   0x1b,1: wtbMan
 //   0x1b,2: wtbRed
 //   0x1b,3: wtbBlue
+//   0x1b,4: AWC set  1=activate
 //   0x1c,0: sync 0=int 1=line 2=vbs
-//   0x1d,0: maskA
-//   0x1d,1: maskB
-//   0x1d,2: maskC
-//   0x1d,3: maskD
+//   0x1c,1: vphase
+//   0x1c,2: hphase
+//   0x1d,0: maskA 0=off 1=on
+//   0x1d,1: maskB 0=off 1=on
+//   0x1d,2: maskC 0=off 1=on
+//   0x1d,3: maskD 0=off 1=on
 //   0x1d,0x10: maskAArea
-//   ...
+//   0x1d,0x11: maskBArea
+//   0x1d,0x12: maskCArea
+//   0x1d,0x13: maskDArea
 //   0x1d,4: negative
 //   0x1d,5: hrev
 //   0x1d,7: vrev
@@ -183,9 +198,10 @@ static Config s_cfg;
 //   0x1d,0x14: gamma
 //   0x1d,0x15,1: apch
 //   0x1d,0x15,2: apcv
-//   0x1d,0x16: coronagraph
+//   0x1d,0x16: coronagraph 0..0x12
 //   0x1d,0x17: colorbar
 //   0x47,0: tec on/off
+//   0x47,1: tec preset on/off
 //   0x47,2: tec lvl
 //   0x47,3: dew removal
 //   0x48: tecArea
@@ -310,262 +326,149 @@ _gen_title(u8 *buf, const char *s)
   u8 const INVAL = 0x3f;
 
   static u8 const map[] = {
-    //       000   0     00    NUL                         
-    INVAL,
-    //       001   1     01    SOH                         
-    INVAL,
-    //       002   2     02    STX                         
-    INVAL,
-    //       003   3     03    ETX                         
-    INVAL,
-    //       004   4     04    EOT                         
-    INVAL,
-    //       005   5     05    ENQ                         
-    INVAL,
-    //       006   6     06    ACK                         
-    INVAL,
-    //       007   7     07    BEL                         
-    INVAL,
-    //       010   8     08    BS                          
-    INVAL,
-    //       011   9     09    HT
-    INVAL,
-    //       012   10    0A    LF  			     
-    INVAL,
-    //       013   11    0B    VT  			     
-    INVAL,
-    //       014   12    0C    FF  			     
-    INVAL,
-    //       015   13    0D    CR  			     
-    INVAL,
-    //       016   14    0E    SO  			     
-    INVAL,
-    //       017   15    0F    SI  			     
-    INVAL,
-    //       020   16    10    DLE 			     
-    INVAL,
-    //       021   17    11    DC1 			     
-    INVAL,
-    //       022   18    12    DC2 			     
-    INVAL,
-    //       023   19    13    DC3 			     
-    INVAL,
-    //       024   20    14    DC4 			     
-    INVAL,
-    //       025   21    15    NAK 			     
-    INVAL,
-    //       026   22    16    SYN 			     
-    INVAL,
-    //       027   23    17    ETB 			     
-    INVAL,
-    //       030   24    18    CAN 			     
-    INVAL,
-    //       031   25    19    EM  			     
-    INVAL,
-    //       032   26    1A    SUB 			     
-    INVAL,
-    //       033   27    1B    ESC 			     
-    INVAL,
-    //       034   28    1C    FS  		             
-    INVAL,
-    //       035   29    1D    GS  		             
-    INVAL,
-    //       036   30    1E    RS  		             
-    INVAL,
-    //       037   31    1F    US  		             
-    INVAL,
-    //       040   32    20    SPACE                       
-    0x10,
-    //       041   33    21    !                           
-    INVAL,
-    //       042   34    22    "                           
-    INVAL,
-    //       043   35    23    #                           
-    INVAL,
-    //       044   36    24    $                           
-    INVAL,
-    //       045   37    25    %                           
-    INVAL,
-    //       046   38    26    &                           
-    INVAL,
-    //       047   39    27    ´                           
-    INVAL,
-    //       050   40    28    (                           
-    0x0b, // <
-    //       051   41    29    )                           
-    0x0c, // >
-    //       052   42    2A    *                           
-    INVAL,
-    //       053   43    2B    +                           
-    INVAL,
-    //       054   44    2C    ,                           
-    0x0f,
-    //       055   45    2D    -                           
-    0x0d,
-    //       056   46    2E    .                           
-    0x0e,
-    //       057   47    2F    /                           
-    0x6d,
-    //       060   48    30    0                           
-    0x00,
-    //       061   49    31    1                           
-    0x01,
-    //       062   50    32    2                           
-    0x02,
-    //       063   51    33    3                           
-    0x03,
-    //       064   52    34    4                           
-    0x04,
-    //       065   53    35    5                           
-    0x05,
-    //       066   54    36    6                           
-    0x06,
-    //       067   55    37    7                           
-    0x07,
-    //       070   56    38    8                           
-    0x08,
-    //       071   57    39    9                           
-    0x09,
-    //       072   58    3A    :                           
-    0x0a,
-    //       073   59    3B    ;                           
-    0x6b,
-    //       074   60    3C    <                           
-    0x0b,
-    //       075   61    3D    =                           
-    INVAL,
-    //       076   62    3E    >                           
-    0x0c,
-    //       077   63    3F    ?                           
-    0x50,
-    //       100   64    40    @  
-    INVAL,
-    //       101   65    41    A  
-    0x11,
-    //       102   66    42    B  
-    0x12,
-    //       103   67    43    C  
-    0x13,
-    //       104   68    44    D  
-    0x14,
-    //       105   69    45    E  
-    0x15,
-    //       106   70    46    F  
-    0x16,
-    //       107   71    47    G  
-    0x17,
-    //       110   72    48    H  
-    0x18,
-    //       111   73    49    I  
-    0x19,
-    //       112   74    4A    J  
-    0x1a,
-    //       113   75    4B    K  
-    0x1b,
-    //       114   76    4C    L  
-    0x1c,
-    //       115   77    4D    M  
-    0x1d,
-    //       116   78    4E    N  
-    0x1e,
-    //       117   79    4F    O  
-    0x00,
-    //       120   80    50    P  
-    0x20,
-    //       121   81    51    Q  
-    0x21,
-    //       122   82    52    R  
-    0x22,
-    //       123   83    53    S  
-    0x23,
-    //       124   84    54    T  
-    0x24,
-    //       125   85    55    U  
-    0x25,
-    //       126   86    56    V  
-    0x26,
-    //       127   87    57    W  
-    0x27,
-    //       130   88    58    X  
-    0x28,
-    //       131   89    59    Y  
-    0x29,
-    //       132   90    5A    Z  
-    0x2a,
-    //       133   91    5B    [  
-    INVAL,
-    //       134   92    5C    \  
-    INVAL,
-    //       135   93    5D    ]  
-    INVAL,
-    //       136   94    5E    ^  
-    INVAL,
-    //       137   95    5F    _  
-    INVAL,
-    //       140   96    60    `  
-    INVAL,
-    //       141   97    61    a  
-    0x51,
-    //       142   98    62    b  
-    0x52,
-    //       143   99    63    c  
-    0x53,
-    //       144   100   64    d  
-    0x54,
-    //       145   101   65    e  
-    0x55,
-    //       146   102   66    f  
-    0x56,
-    //       147   103   67    g  
-    0x57,
-    //       150   104   68    h  
-    0x58,
-    //       151   105   69    i  
-    0x59,
-    //       152   106   6A    j  
-    0x5a,
-    //       153   107   6B    k  
-    0x5b,
-    //       154   108   6C    l  
-    0x5c,
-    //       155   109   6D    m  
-    0x5d,
-    //       156   110   6E    n  
-    0x5e,
-    //       157   111   6F    o  
-    0x5f,
-    //       160   112   70    p  
-    0x60,
-    //       161   113   71    q  
-    0x61,
-    //       162   114   72    r  
-    0x62,
-    //       163   115   73    s  
-    0x63,
-    //       164   116   74    t  
-    0x64,
-    //       165   117   75    u  
-    0x65,
-    //       166   118   76    v  
-    0x66,
-    //       167   119   77    w  
-    0x67,
-    //       170   120   78    x  
-    0x68,
-    //       171   121   79    y  
-    0x69,
-    //       172   122   7A    z  
-    0x6a,
-    //       173   123   7B    {  
-    INVAL,
-    //       174   124   7C    |  
-    INVAL,
-    //       175   125   7D    }  
-    INVAL,
-    //       176   126   7E    ~  
-    INVAL,
-    //       177   127   7F    DEL
-    INVAL,
+      INVAL, // NUL
+      INVAL, // SOH
+      INVAL, // STX
+      INVAL, // ETX
+      INVAL, // EOT
+      INVAL, // ENQ
+      INVAL, // ACK
+      INVAL, // BEL
+
+      INVAL, // BS
+      INVAL, // HT
+      INVAL, // LF
+      INVAL, // VT
+      INVAL, // FF
+      INVAL, // CR
+      INVAL, // SO
+      INVAL, // SI
+
+      INVAL, // DLE
+      INVAL, // DC1
+      INVAL, // DC2
+      INVAL, // DC3
+      INVAL, // DC4
+      INVAL, // NAK
+      INVAL, // SYN
+      INVAL, // ETB
+
+      INVAL, // CAN
+      INVAL, // EM
+      INVAL, // SUB
+      INVAL, // ESC
+      INVAL, // FS
+      INVAL, // GS
+      INVAL, // RS
+      INVAL, // US
+
+      0x10, // SPACE
+      INVAL, // 21    !
+      INVAL, // 22    "
+      INVAL, // 23    #
+      INVAL, // 24    $
+      INVAL, // 25    %
+      INVAL, // 26    &
+      INVAL, // 27    '
+
+      0x0b, // < // 28    (
+      0x0c, // > // 29    )
+      INVAL, // 2A    *
+      INVAL, // 2B    +
+      0x0f, // 2C    ,
+      0x0d, // 2D    -
+      0x0e, // 2E    .
+      0x6d, // 2F    /
+
+      0x00, // 0
+      0x01, // 1
+      0x02, // 2
+      0x03, // 3
+      0x04, // 4
+      0x05, // 5
+      0x06, // 6
+      0x07, // 7
+
+      0x08, // 8
+      0x09, // 9
+      0x0a, // 3A    :
+      0x6b, // 3B    ;
+      0x0b, // 3C    <
+      INVAL, // 3D    =
+      0x0c, // 3E    >
+      0x50, // 3F    ?
+
+      INVAL, // 40    @
+      0x11, // A
+      0x12, // B
+      0x13, // C
+      0x14, // D
+      0x15, // E
+      0x16, // F
+      0x17, // G
+
+      0x18, // H
+      0x19, // I
+      0x1a, // J
+      0x1b, // K
+      0x1c, // L
+      0x1d, // M
+      0x1e, // N
+      0x00, // O
+
+      0x20, // P
+      0x21, // Q
+      0x22, // R
+      0x23, // S
+      0x24, // T
+      0x25, // U
+      0x26, // V
+      0x27, // W
+
+      0x28, // X
+      0x29, // Y
+      0x2a, // Z
+      INVAL, // 5B    [
+      INVAL, // 5C    backslash
+      INVAL, // 5D    ]
+      INVAL, // 5E    ^
+      INVAL, // 5F    _
+
+      INVAL, // 60    backquot
+      0x51, // a
+      0x52, // b
+      0x53, // c
+      0x54, // d
+      0x55, // e
+      0x56, // f
+      0x57, // g
+
+      0x58, // h
+      0x59, // i
+      0x5a, // j
+      0x5b, // k
+      0x5c, // l
+      0x5d, // m
+      0x5e, // n
+      0x5f, // o
+
+      0x60, // p
+      0x61, // q
+      0x62, // r
+      0x63, // s
+      0x64, // t
+      0x65, // u
+      0x66, // v
+      0x67, // w
+
+      0x68, // x
+      0x69, // y
+      0x6a, // z
+      INVAL, // 7B    {
+      INVAL, // 7C    |
+      INVAL, // 7D    }
+      INVAL, // 7E    ~
+      INVAL, // DEL
   };
 
   bool eos = false;
@@ -618,6 +521,54 @@ _decode_title(const u8 *buf)
       break;
 
   return obuf;
+}
+
+static void
+_emit_mask_enable(bool enable)
+{
+    u8 val = enable ? 1 : 0;
+    emit2(0x1d, 0, val);
+    emit2(0x1d, 1, val);
+    emit2(0x1d, 2, val);
+    emit2(0x1d, 3, val);
+}
+
+static void
+_emit_cross_hairs()
+{
+    // todo
+}
+
+static void
+_emit_cross_box()
+{
+#if 1
+    u8 a[4] = { 0x0e, 0x37, 0xc4, 0x3a, };
+    u8 b[4] = { 0x0e, 0x41, 0xc4, 0x44, };
+    u8 c[4] = { 0x65, 0x01, 0x68, 0x80, };
+    u8 d[4] = { 0x71, 0x01, 0x74, 0x80, };
+#else
+//    enum { W = 768, H = 494, BAR = 20, BOX = 40, }
+    enum { W = 128, H = 128, BARW = 3, BARH = 3, BOXW = 10, BOXH = 6 };
+    u8 c[4] = { 0,             H/2-BOXH/2-BARH, W-1,           H/2-BOXH/2 };
+    u8 d[4] = { 0,             H/2+BOXH/2,     W-1,           H/2+BOXH/2+BARH };
+    u8 a[4] = { W/2-BOXW/2-BARW, 0,             W/2-BOXW/2,     H-1 };
+    u8 b[4] = { W/2+BOXW/2,     0,             W/2+BOXW/2+BARW, H-1 };
+#endif
+    emit2(0x1d, 0x10, &a[0], sizeof(a));
+    emit2(0x1d, 0x11, &b[0], sizeof(b));
+    emit2(0x1d, 0x12, &c[0], sizeof(c));
+    emit2(0x1d, 0x13, &d[0], sizeof(d));
+}
+
+static void
+_emit_mask(int mask)
+{
+    switch (mask) {
+    case 0: _emit_mask_enable(false); break;
+    case 1: _emit_cross_hairs(); _emit_mask_enable(true); break;
+    case 2: _emit_cross_box(); _emit_mask_enable(true); break;
+    }
 }
 
 static void
@@ -715,7 +666,7 @@ gen_cmds(const Camera& a, const Camera& b)
   }
 
   if (b.mask != a.mask) {
-    // todo: set mask
+      _emit_mask(b.mask);
   }
 
   if (b.neg != a.neg) {
@@ -879,7 +830,7 @@ connect:
 
     while (!m_terminated) {
         bool err;
-        bool recvd = mcxcomm_recv(&evt.evt_msg, 5000, &err);
+        bool recvd = mcxcomm_recv(&evt.evt_msg, 1000, &err);
 
         if (err) {
             mcxcomm_disconnect();
@@ -1193,12 +1144,64 @@ _cam_discover(bool *done)
     *done = true;
 }
 
+#define X 0
+static u8 DISCO[] = {
+    0x10, 0,    X, // title on/off 0=off 1=on
+    0x10, 1,    X, // title
+    0x10, 3,    X, // title pos
+    0x11, X,    X, // senseUp
+    0x12, X,    X, // alc/elc
+    0x15, X,    X, // alc
+    0x16, X,    X, // elc
+    0x18, 0,    X, // blc
+    0x18, 1,    X, // blc preset
+    0x19, X,    X, // blc area
+    0x22, X,    X, // blc peak
+    0x1a, 0,    X, // agc
+    0x1a, 1,    X, // agc lvl
+    0x1a, 2,    X, // agc man lvl
+    0x1b, 0,    X, // wtb
+    0x1b, 1,    X, // wtbMan
+    0x1b, 2,    X, // wtbRed
+    0x1b, 3,    X, // wtbBlue
+    0x1b, 4,    X, // AWC set  1=activate
+    0x1c, 0,    X, // sync 0=int 1=line 2=vbs
+    0x1c, 1,    X, // vphase
+    0x1c, 2,    X, // hphase
+    0x1d, 0,    X, // maskA 0=off 1=on
+    0x1d, 1,    X, // maskB 0=off 1=on
+    0x1d, 2,    X, // maskC 0=off 1=on
+    0x1d, 3,    X, // maskD 0=off 1=on
+    0x1d, 0x10, X, // maskAArea
+    0x1d, 0x11, X, // maskBArea
+    0x1d, 0x12, X, // maskCArea
+    0x1d, 0x13, X, // maskDArea
+    0x1d, 4,    X, // negative
+    0x1d, 5,    X, // hrev
+    0x1d, 7,    X, // vrev
+    0x1d, 9,    X, // freeze fld=0 frame=1
+    0x1d, 8,    X, // freeze 0=off 1=on
+    0x1d, 6,    X, // priority
+    0x1d, 0x14, X, // gamma
+    0x1d, 0x15, 1, // apch
+    0x1d, 0x15, 2, // apcv
+    0x1d, 0x16, X, // coronagraph 0..0x12
+    0x1d, 0x17, X, // colorbar
+    0x47, 0,    X, // tec on/off
+    0x47, 1,    X, // tec preset on/off
+    0x47, 2,    X, // tec lvl
+    0x47, 3,    X, // dew removal
+    0x48, X,    X, // tecArea
+    0x1f, 0,    X, // zoom on/off
+    0x1f, 1,    X, // zoom level
+};
+#undef X
+
 static void
 _send_next_smry_cmd()
 {
     msg req;
-    mcxcmd_get(&req, 0x45);
-    req.data[0] = s_fsm_next_smry;
+    mcxcmd_get(&req, 0x45, s_fsm_next_smry);
 
     char buf[32];
     snprintf(buf, sizeof(buf), "Reading from camera (%u/7)", s_fsm_next_smry + 1);
@@ -1265,14 +1268,44 @@ _cam_reading2(bool *done)
 
         if (s_fsm_response.stx == STX) {
             mcxcomm_send_ack();
+#if 0
             _handle_smry();
+#else
+            if (s_fsm_response.ctrl == 0x45)
+                _handle_smry();
+#endif
         }
 
+#if 0
         if (++s_fsm_next_smry < 7) {
             _send_next_smry_cmd();
             s_camera_state = CAM_READING1;
             *done = true;
         }
+#else
+        if (++s_fsm_next_smry < 11) {
+            if (s_fsm_next_smry < 7)
+                _send_next_smry_cmd();
+            else
+{
+    msg req;
+    mcxcmd_get(&req, 0x1d, 0x10 + s_fsm_next_smry - 7);
+
+    char buf[32];
+    snprintf(buf, sizeof(buf), "Reading from camera (%u/7)", s_fsm_next_smry + 1);
+    status(buf);
+
+    s_fsm_got_ack = false;
+    s_fsm_got_response = false;
+    mcxcomm_send_msg(req);
+
+    s_fsm_timeout = false;
+    s_fsm_timer->Start(ACK_TIMEOUT_MS, wxTIMER_ONE_SHOT);
+}
+            s_camera_state = CAM_READING1;
+            *done = true;
+        }
+#endif
         else {
             _init_ctrl_vals();
             _enable_controls(EN_ENABLE_ALL);
@@ -1312,7 +1345,11 @@ _cam_sending2(bool *done)
 // TODO: handle NAK or other error response
         s_fsm_timer->Stop();
         mcxcomm_send_ack();
-        s_camera_state = CAM_UPTODATE;
+
+        s_fsm_timeout = false;
+        s_fsm_timer->Start(COMMAND_DELAY_MS, wxTIMER_ONE_SHOT);
+        s_camera_state = CAM_DELAY;
+        *done = true;
     }
     else if (s_fsm_timeout) {
         s_camera_state = CAM_DISCOVER;
@@ -1322,29 +1359,36 @@ _cam_sending2(bool *done)
 }
 
 static void
+_cam_delay(bool *done)
+{
+    if (s_fsm_timeout)
+        s_camera_state = CAM_UPTODATE;
+    else
+        *done = true;
+}
+
+static void
 _cam_uptodate(bool *done)
 {
-  //  wxLogDebug("dostate %s", __FUNCTION__);
+    cmdmap_t::iterator it = s_cmdmap.begin();
 
-  cmdmap_t::iterator it = s_cmdmap.begin();
+    if (it != s_cmdmap.end()) {
+        s_active_cmd = it->second;
+        s_cmdmap.erase(it);
 
-  if (it != s_cmdmap.end()) {
-    s_active_cmd = it->second;
-    s_cmdmap.erase(it);
+        wxLogDebug("send_cmd: [%s]", _readable(s_active_cmd));
 
-    wxLogDebug("send_cmd: [%s]", _readable(s_active_cmd));
+        s_fsm_got_ack = false;
+        s_fsm_got_response = false;
+        mcxcomm_send_msg(s_active_cmd);
 
-    s_fsm_got_ack = false;
-    s_fsm_got_response = false;
-    mcxcomm_send_msg(s_active_cmd);
+        s_fsm_timeout = false;
+        s_fsm_timer->Start(ACK_TIMEOUT_MS, wxTIMER_ONE_SHOT);
 
-    s_fsm_timeout = false;
-    s_fsm_timer->Start(ACK_TIMEOUT_MS, wxTIMER_ONE_SHOT);
+        s_camera_state = CAM_SENDING1;
+    }
 
-    s_camera_state = CAM_SENDING1;
-  }
-
-  *done = true;
+    *done = true;
 }
 
 static void
@@ -1396,7 +1440,7 @@ _int_init1(bool *done)
 inline static bool
 _camera_cmds_in_flight()
 {
-  return s_camera_state != CAM_UPTODATE || !s_cmdmap.empty();
+    return s_camera_state != CAM_UPTODATE || !s_cmdmap.empty();
 }
 
 static void
@@ -1667,6 +1711,7 @@ ___do_camera_fsm()
     case CAM_READING2:      _cam_reading2(&done);      break;
     case CAM_SENDING1:      _cam_sending1(&done);      break;
     case CAM_SENDING2:      _cam_sending2(&done);      break;
+    case CAM_DELAY:         _cam_delay(&done);         break;
     case CAM_UPTODATE:      _cam_uptodate(&done);      break;
     case CAM_SHUTTING_DOWN: _cam_shutting_down(&done); break;
     default:
@@ -2415,18 +2460,19 @@ MainFrameD::xhClicked(wxCommandEvent& event)
   if (on) {
     m_toolBar->ToggleTool(ID_CROSS_BOX, false);
   }
-  // todo send cmd
+  s_cam1.mask = on ? 1 : 0;
+  dnotify(UPD_IMMEDIATE);
 }
 
 void
 MainFrameD::xbClicked(wxCommandEvent& event)
 {
-  wxLogDebug("%s", __FUNCTION__);
   bool on = m_toolBar->GetToolState(ID_CROSS_BOX);
   if (on) {
     m_toolBar->ToggleTool(ID_CROSS_HAIRS, false);
   }
-  // todo send cmd
+  s_cam1.mask = on ? 2 : 0;
+  dnotify(UPD_IMMEDIATE);
 }
 
 void
@@ -2619,7 +2665,6 @@ MainFrameD::EnableControls(EnableType how)
     m_wtb5600Btn->Enable(enable);
     m_wtbRed->Enable(enable);
     m_wtbBlue->Enable(enable);
-    m_wtbBlueVal->Enable(enable);
   }
 
   if (enable) {

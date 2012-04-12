@@ -57,7 +57,8 @@ mcxcmd_set(msg *msg, u8 item, const u8 *data, size_t len)
 }
 
 void
-mcxcmd_get(msg *msg, u8 item)
+mcxcmd_get(msg *msg, u8 item, u8 subitem, u8 subsubitem)
 {
-  __init_cmd(msg, CMD_GET, item, 0, 0);
+    u8 const data[] = { subitem, subsubitem };
+    __init_cmd(msg, CMD_GET, item, &data[0], sizeof(data));
 }
