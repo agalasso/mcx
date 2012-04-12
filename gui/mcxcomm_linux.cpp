@@ -1,4 +1,48 @@
 #include "mcxcomm.h"
+
+bool
+mcxcomm_init()
+{
+  return true;
+}
+
+bool
+mcxcomm_connect(const char *filename)
+{
+  return false;
+}
+
+void
+mcxcomm_disconnect()
+{
+}
+
+bool
+mcxcomm_send_enq()
+{
+  return false;
+}
+
+bool
+mcxcomm_send_ack()
+{
+  return false;
+}
+
+bool
+mcxcomm_send_msg(const msg& msg)
+{
+  return false;
+}
+
+bool
+mcxcomm_recv(msg *msg, unsigned int timeout_ms, bool *err)
+{
+  *err = true;
+  return false;
+}
+
+# if 0
 #include "crc16.h"
 
 #include <stdio.h>
@@ -262,3 +306,4 @@ zzmain(int argc, char *argv[])
     _dump_msg("got resp", &rsp);
   }
 }
+#endif
