@@ -2080,7 +2080,7 @@ MainFrameD::wtbBlueScroll(wxScrollEvent& event)
 void
 MainFrameD::gammaUpdated()
 {
-  const char *sval[] = { "0.75", "1.0" };
+  const char *sval[] = { "0.45", "1.0" };
   int const p = m_gamma->GetValue();
   wxASSERT(p >= 0 && p < lengthof(sval));
   m_gammaVal->SetLabel(sval[p]);
