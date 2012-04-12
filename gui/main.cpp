@@ -2,9 +2,10 @@
 // TODO: top button functions
 // TODO: camera comm for windows
 // TODO: config window (comm port, anything else?)
-// TODO: app icon
+// TODO: app icon and window title
 // TODO: resend mcx message if not acked?
 // TODO: accept varios integration time formats  2m 2:30 2.5m
+// TODO: fix window height
 //
 // TODO: fix toolbar background
 // TODO: git
@@ -19,6 +20,8 @@
 #ifndef WX_PRECOMP
 # include "wx/wx.h"
 #endif
+
+#include <wx/config.h>
 
 #include "mcxgui.h"
 #include "mcxcomm.h"
@@ -65,13 +68,15 @@ enum EnableType {
 enum {
   DEFERRED_EVENT_INTERVAL = 1000, // milliseconds
 
+  ACK_TIMEOUT_MS = 5000,
+  RESPONSE_TIMEOUT_MS = 10000,
+
   AGC_WAIT_MS = 3 * 60 * 1000, // how long to wait after agc change
 };
 
 enum CameraState {
   CAM_INIT,
   CAM_DISCONNECTED,
-  CAM_CONNECTING,
   CAM_DISCOVER,
   CAM_DISCOVERING,
   CAM_READING1,
@@ -101,6 +106,8 @@ enum AgcState {
   AGC_CLEANUP,
 };
 
+class ReaderThread;
+
 typedef std::map<u32, msg> cmdmap_t;
 static cmdmap_t s_cmdmap;
 static msg s_active_cmd;
@@ -108,10 +115,11 @@ static CameraState s_camera_state = CAM_INIT;
 static wxTimer *s_deferred_evt_timer;
 static wxTimer *s_fsm_timer;
 static bool s_fsm_timeout;
-static wxThread *s_reader;
-static int s_reader_connected = -1;
+static ReaderThread *s_reader;
+static bool s_reader_connected;
 static int s_fsm_next_smry;
 static bool s_fsm_got_ack;
+static bool s_fsm_got_response;
 static msg s_fsm_response;
 static IntState s_int_state = INT_STOPPED;
 static bool s_int_stop_clicked;
@@ -137,6 +145,7 @@ struct Config
 {
   wxString cfg_serial_port;
 };
+static wxMutex *s_cfg_lock;
 static Config s_cfg;
 
 // regs:
@@ -248,7 +257,7 @@ cmda(u8 a, const u8 *b, size_t len)
 {
   msg msg;
   mcxcmd_set(&msg, a, b, len);
-wxPrintf("cmda a=%u b=[%u %u %u ...] l=%zu\n",(unsigned)a, (unsigned)b[0], (unsigned)b[1], (unsigned)b[2], len);
+wxLogDebug("cmda a=0x%x b=[0x%x 0x%x 0x%x ...] l=%zu",(unsigned)a, (unsigned)b[0], (unsigned)b[1], (unsigned)b[2], len);
   return msg;
 }
 
@@ -809,37 +818,81 @@ struct McxMsgEvent : public wxNotifyEvent
 struct ReaderThread
   : public wxThread
 {
-  wxEvtHandler *m_evt_handler;
+    wxEvtHandler *m_evt_handler;
+    volatile bool m_terminated;
 
-  ReaderThread(wxEvtHandler *evt_handler)
-    : wxThread(wxTHREAD_DETACHED), m_evt_handler(evt_handler) { }
-  ExitCode Entry();
+    ReaderThread(wxEvtHandler *evt_handler)
+        : wxThread(wxTHREAD_JOINABLE), m_evt_handler(evt_handler), m_terminated(false) { }
+    ExitCode Entry();
+    bool Connect();
 };
+
+bool
+ReaderThread::Connect()
+{
+    wxString last_port;
+
+    while (true) {
+        wxString port;
+
+        {
+            wxMutexLocker _l(*s_cfg_lock);
+            port = s_cfg.cfg_serial_port;
+        }
+
+        bool connected = mcxcomm_connect(port.c_str());
+
+        if (connected || port != last_port)
+            wxLogDebug("reader connect %s: %s", port, connected ? "ok" : "failed");
+
+        if (connected)
+            break;
+
+        last_port = port;
+
+        wxMilliSleep(500);
+        if (m_terminated)
+            return false;
+    }
+
+    {
+        McxMsgEvent evt;
+        evt.evt_msgtype = RDR_CONNECTED;
+        m_evt_handler->AddPendingEvent(evt);
+    }
+
+    return true;
+}
 
 wxThread::ExitCode
 ReaderThread::Entry()
 {
-  wxPrintf("reader thread running\n");
+    wxLogDebug("reader thread running");
 
-  {
-    bool connected = mcxcomm_connect(s_cfg.cfg_serial_port.c_str());
     McxMsgEvent evt;
-    evt.evt_msgtype = connected ? RDR_CONNECTED : RDR_CONNECT_FAILED;
-    m_evt_handler->AddPendingEvent(evt);
-    if (!connected)
-      return 0;
-  }
+    evt.evt_msgtype = RDR_MSG;
 
-  McxMsgEvent evt;
-  evt.evt_msgtype = RDR_MSG;
+connect:
 
-  while (!TestDestroy()) {
-    bool recvd = mcxcomm_recv(&evt.evt_msg, 1000);
-    // todo: error vs timeout ?
-    if (!recvd)
-      continue;
-    m_evt_handler->AddPendingEvent(evt);
-  }
+    if (!Connect())
+        return 0;
+
+    while (!m_terminated) {
+        bool err;
+        bool recvd = mcxcomm_recv(&evt.evt_msg, 5000, &err);
+
+        if (err) {
+            mcxcomm_disconnect();
+            goto connect;
+        }
+
+        if (!recvd) // timed-out
+            continue;
+
+        m_evt_handler->AddPendingEvent(evt);
+    }
+
+    return 0;
 }
 
 typedef void (wxEvtHandler::*McxMsgEventFunction)(McxMsgEvent&);
@@ -850,74 +903,75 @@ typedef void (wxEvtHandler::*McxMsgEventFunction)(McxMsgEvent&);
 class MainFrameD : public MainFrame
 {
 public:
-  MainFrameD(wxWindow *parent);
-  ~MainFrameD();
+    MainFrameD(wxWindow *parent);
+    ~MainFrameD();
 
-  void senseUpScroll(wxScrollEvent& event);
-  void alcScroll(wxScrollEvent& event);
-  void elcScroll(wxScrollEvent& event);
-  void intTextEnter(wxCommandEvent& event);
-  void intKillFocus(wxFocusEvent& event);
-  void intBtnClicked(wxCommandEvent& event);
-  void intCombobox(wxCommandEvent& event);
-  void agcManScroll(wxScrollEvent& event);
-  void agcAutoScroll(wxScrollEvent& event);
-  void apcHScroll(wxScrollEvent& event);
-  void apcVScroll(wxScrollEvent& event);
-  void wtbRedScroll(wxScrollEvent& event);
-  void wtbBlueScroll(wxScrollEvent& event);
-  void gammaScroll(wxScrollEvent& event);
-  void zoomScroll(wxScrollEvent& event);
-  void tecLevelScroll(wxScrollEvent& event);
-  void dewRemovalScroll(wxScrollEvent& event);
-  void coronagraphScroll(wxScrollEvent& event);
+    void senseUpScroll(wxScrollEvent& event);
+    void alcScroll(wxScrollEvent& event);
+    void elcScroll(wxScrollEvent& event);
+    void intTextEnter(wxCommandEvent& event);
+    void intKillFocus(wxFocusEvent& event);
+    void intBtnClicked(wxCommandEvent& event);
+    void intCombobox(wxCommandEvent& event);
+    void agcManScroll(wxScrollEvent& event);
+    void agcAutoScroll(wxScrollEvent& event);
+    void apcHScroll(wxScrollEvent& event);
+    void apcVScroll(wxScrollEvent& event);
+    void wtbRedScroll(wxScrollEvent& event);
+    void wtbBlueScroll(wxScrollEvent& event);
+    void gammaScroll(wxScrollEvent& event);
+    void zoomScroll(wxScrollEvent& event);
+    void tecLevelScroll(wxScrollEvent& event);
+    void dewRemovalScroll(wxScrollEvent& event);
+    void coronagraphScroll(wxScrollEvent& event);
+    void portChoice(wxCommandEvent& event);
 
-  void atwSelected(wxCommandEvent& event);
-  void awcSelected(wxCommandEvent& event);
-  void wtbRBSelected(wxCommandEvent& event);
-  void wtb3200Selected(wxCommandEvent& event);
-  void wtb5600Selected(wxCommandEvent& event);
-  void titleText(wxCommandEvent& event);
+    void atwSelected(wxCommandEvent& event);
+    void awcSelected(wxCommandEvent& event);
+    void wtbRBSelected(wxCommandEvent& event);
+    void wtb3200Selected(wxCommandEvent& event);
+    void wtb5600Selected(wxCommandEvent& event);
+    void titleText(wxCommandEvent& event);
 
-  void dsClicked(wxCommandEvent& event);
-  void plClicked(wxCommandEvent& event);
-  void luClicked(wxCommandEvent& event);
-  void ldClicked(wxCommandEvent& event);
-  void svClicked(wxCommandEvent& event);
-  void xhClicked(wxCommandEvent& event);
-  void xbClicked(wxCommandEvent& event);
-  void cbClicked(wxCommandEvent& event);
-  void rhClicked(wxCommandEvent& event);
-  void rvClicked(wxCommandEvent& event);
-  void ngClicked(wxCommandEvent& event);
-  void fzClicked(wxCommandEvent& event);
-  void ccClicked(wxCommandEvent& event);
-  void sleepClicked(wxCommandEvent& event);
-  void statusBarLeftUp(wxMouseEvent& event);
+    void dsClicked(wxCommandEvent& event);
+    void plClicked(wxCommandEvent& event);
+    void luClicked(wxCommandEvent& event);
+    void ldClicked(wxCommandEvent& event);
+    void svClicked(wxCommandEvent& event);
+    void xhClicked(wxCommandEvent& event);
+    void xbClicked(wxCommandEvent& event);
+    void cbClicked(wxCommandEvent& event);
+    void rhClicked(wxCommandEvent& event);
+    void rvClicked(wxCommandEvent& event);
+    void ngClicked(wxCommandEvent& event);
+    void fzClicked(wxCommandEvent& event);
+    void ccClicked(wxCommandEvent& event);
+    void sleepClicked(wxCommandEvent& event);
+    void statusBarLeftUp(wxMouseEvent& event);
 
-  void OnTimer(wxTimerEvent& event);
-  void OnMcxMsg(McxMsgEvent& event);
+    void OnTimer(wxTimerEvent& event);
+    void OnMcxMsg(McxMsgEvent& event);
 
-  void EnableControls(EnableType enable);
-  void doEnablesForSenseUp();
-  void doEnablesForWtb();
+    void EnableControls(EnableType enable);
+    void doEnablesForSenseUp();
+    void doEnablesForWtb();
 
-  void senseUpUpdated();
-  void alcUpdated();
-  void elcUpdated();
-  void agcManUpdated();
-  void agcAutoUpdated();
-  void wtbRedUpdated();
-  void wtbBlueUpdated();
-  void gammaUpdated();
-  void apcHUpdated();
-  void apcVUpdated();
-  void coronagraphUpdated();
-  void tecLevelUpdated();
-  void dewRemovalUpdated();
-  void zoomUpdated();
+    void senseUpUpdated();
+    void alcUpdated();
+    void elcUpdated();
+    void agcManUpdated();
+    void agcAutoUpdated();
+    void wtbRedUpdated();
+    void wtbBlueUpdated();
+    void gammaUpdated();
+    void apcHUpdated();
+    void apcVUpdated();
+    void coronagraphUpdated();
+    void tecLevelUpdated();
+    void dewRemovalUpdated();
+    void zoomUpdated();
 
-  void InitControls(Camera *cam);
+    void InitControls(Camera *cam);
 };
 
 static MainFrameD *
@@ -973,137 +1027,10 @@ _enable_controls(EnableType enable)
 }
 
 static void
-_cam_init(bool *done)
-{
-  //  wxPrintf("dostate %s\n", __FUNCTION__);
-
-  _enable_controls(EN_DISABLE);
-  if (s_cfg.cfg_serial_port.IsEmpty())
-    s_camera_state = CAM_DISCONNECTED;
-  else
-    s_camera_state = CAM_CONNECTING;
-}
-
-static void
-_cam_disconnected(bool *done)
-{
-  //  wxPrintf("dostate %s\n", __FUNCTION__);
-
-  if (!s_cfg.cfg_serial_port.IsEmpty() && s_reader_connected == -1)
-    s_camera_state = CAM_CONNECTING;
-  else
-    *done = true;
-}
-
-static void
-_cam_connecting(bool *done)
-{
-  //  wxPrintf("dostate %s\n", __FUNCTION__);
-
-  if (!s_reader) {
-    status("Connecting to camera on " + s_cfg.cfg_serial_port);
-    wxPrintf("starting reader thread\n");
-    wxWindow *topwin = wxGetApp().GetTopWindow();
-    wxThread *const thread = new ReaderThread(topwin);
-    thread->Create();
-    thread->Run();
-    s_reader_connected = -1;
-    s_reader = thread;
-    *done = true;
-  }
-  else if (s_reader_connected == 0) {
-    // connect failed, reader will exit
-    s_reader->Delete();
-    s_reader = 0;
-    s_camera_state = CAM_DISCONNECTED;
-  }
-  else if (s_reader_connected == 1) {
-    s_camera_state = CAM_DISCOVER;
-  }
-  else
-    *done = true;
-}
-
-static void
-_cam_discover(bool *done)
-{
-  //  wxPrintf("dostate %s\n", __FUNCTION__);
-
-  s_fsm_got_ack = false;
-  s_fsm_response.stx = 0;
-  mcxcomm_send_enq();
-
-  s_fsm_timeout = false;
-  s_fsm_timer->Start(1000, wxTIMER_ONE_SHOT);
-
-  s_camera_state = CAM_DISCOVERING;
-  *done = true;
-}
-
-static void
-_send_next_smry_cmd()
-{
-  msg req;
-  mcxcmd_get(&req, 0x45);
-  req.data[0] = s_fsm_next_smry;
-
-  char buf[32];
-  snprintf(buf, sizeof(buf), "Reading from camera (%u/7)", s_fsm_next_smry + 1);
-  status(buf);
-
-  s_fsm_got_ack = false;
-  s_fsm_response.stx = 0;
-  mcxcomm_send_msg(req);
-
-  s_fsm_timeout = false;
-  s_fsm_timer->Start(1000, wxTIMER_ONE_SHOT);
-}
-
-static void
-_cam_discovering(bool *done)
-{
-  //  wxPrintf("dostate %s\n", __FUNCTION__);
-
-  if (s_fsm_got_ack) {
-    s_fsm_timer->Stop();
-
-    s_fsm_next_smry = 0;
-    _send_next_smry_cmd();
-
-    s_camera_state = CAM_READING1;
-  }
-  else if (s_fsm_timeout) {
-    s_camera_state = CAM_DISCOVER;
-    // todo: after N timeouts, kill reader, >disconnected
-  }
-  else
-    *done = true;
-}
-
-static void
-_cam_reading1(bool *done)
-{
-  //  wxPrintf("dostate %s\n", __FUNCTION__);
-
-  if (s_fsm_got_ack) {
-    // restart timer for response
-    s_fsm_timeout = false;
-    s_fsm_timer->Start(1000, wxTIMER_ONE_SHOT);
-    s_camera_state = CAM_READING2;
-    *done = true;
-  }
-  else if (s_fsm_timeout) {
-    s_camera_state = CAM_DISCOVER;
-  }
-  else
-    *done = true;
-}
-
-static void
 _handle_smry_0()
 {
   s_cam0.title = _decode_title(&s_fsm_response.data[1]);
-  wxPrintf("read camera: title = [%s]\n", s_cam0.title);
+  wxLogDebug("read camera: title = [%s]", s_cam0.title);
 }
 
 static void
@@ -1205,7 +1132,7 @@ _handle_smry_6()
 static void
 _handle_smry()
 {
-  wxPrintf("handle smry %u\n", (unsigned int) s_fsm_response.data[0]);
+  wxLogDebug("handle smry %u", (unsigned int) s_fsm_response.data[0]);
 
   switch (s_fsm_response.data[0]) {
   case 0: _handle_smry_0(); break;
@@ -1223,81 +1150,181 @@ _init_ctrl_vals()
 {
   _win()->InitControls(&s_cam0);
   s_cam1 = s_cam0;
+  s_cmdmap.clear();
+}
+
+static void
+_cam_init(bool *done)
+{
+  //  wxLogDebug("dostate %s", __FUNCTION__);
+
+  _enable_controls(EN_DISABLE);
+
+  status("Connecting to camera on " + s_cfg.cfg_serial_port);
+
+  s_reader_connected = false;
+  s_camera_state = CAM_DISCONNECTED;
+}
+
+static void
+_cam_disconnected(bool *done)
+{
+    //  wxLogDebug("dostate %s", __FUNCTION__);
+
+    if (s_reader_connected) {
+        wxLogDebug("reader thread connected");
+        s_camera_state = CAM_DISCOVER;
+    }
+    else
+        *done = true;
+}
+
+static void
+_cam_discover(bool *done)
+{
+    s_fsm_got_ack = false;
+    s_fsm_got_response = false;
+    mcxcomm_send_enq();
+
+    s_fsm_timeout = false;
+    s_fsm_timer->Start(ACK_TIMEOUT_MS, wxTIMER_ONE_SHOT);
+
+    s_camera_state = CAM_DISCOVERING;
+    *done = true;
+}
+
+static void
+_send_next_smry_cmd()
+{
+    msg req;
+    mcxcmd_get(&req, 0x45);
+    req.data[0] = s_fsm_next_smry;
+
+    char buf[32];
+    snprintf(buf, sizeof(buf), "Reading from camera (%u/7)", s_fsm_next_smry + 1);
+    status(buf);
+
+    s_fsm_got_ack = false;
+    s_fsm_got_response = false;
+    mcxcomm_send_msg(req);
+
+    s_fsm_timeout = false;
+    s_fsm_timer->Start(ACK_TIMEOUT_MS, wxTIMER_ONE_SHOT);
+}
+
+static void
+_cam_discovering(bool *done)
+{
+    //  wxLogDebug("dostate %s", __FUNCTION__);
+
+    if (s_fsm_got_ack) {
+        s_fsm_timer->Stop();
+
+        s_fsm_next_smry = 0;
+        _send_next_smry_cmd();
+
+        s_camera_state = CAM_READING1;
+    }
+    else if (s_fsm_timeout) {
+        s_camera_state = CAM_DISCOVER;
+        // todo: after N timeouts, kill reader, >disconnected
+    }
+    else
+        *done = true;
+}
+
+static void
+_cam_reading1(bool *done)
+{
+    if (s_fsm_got_ack) {
+        // restart timer for response
+        s_fsm_timeout = false;
+        s_fsm_timer->Start(RESPONSE_TIMEOUT_MS, wxTIMER_ONE_SHOT);
+        s_camera_state = CAM_READING2;
+        *done = true;
+    }
+    else if (s_fsm_got_response) {
+        // probably a NAK
+        s_camera_state = CAM_READING2;
+    }
+    else if (s_fsm_timeout) {
+        s_camera_state = CAM_DISCOVER;
+    }
+    else
+        *done = true;
 }
 
 static void
 _cam_reading2(bool *done)
 {
-  //  wxPrintf("dostate %s\n", __FUNCTION__);
+    //  wxLogDebug("dostate %s", __FUNCTION__);
 
-  if (s_fsm_response.stx == STX) {
-    // got response
-    s_fsm_timer->Stop();
-    mcxcomm_send_ack();
+    if (s_fsm_got_response) {
 
-    _handle_smry();
+        s_fsm_timer->Stop();
 
-    if (++s_fsm_next_smry < 7) {
-      _send_next_smry_cmd();
-      s_camera_state = CAM_READING1;
-      *done = true;
+        if (s_fsm_response.stx == STX) {
+            mcxcomm_send_ack();
+            _handle_smry();
+        }
+
+        if (++s_fsm_next_smry < 7) {
+            _send_next_smry_cmd();
+            s_camera_state = CAM_READING1;
+            *done = true;
+        }
+        else {
+            _init_ctrl_vals();
+            _enable_controls(EN_ENABLE_ALL);
+            status("");
+            s_camera_state = CAM_UPTODATE;
+        }
+    }
+    else if (s_fsm_timeout) {
+        s_camera_state = CAM_DISCOVER;
     }
     else {
-      _init_ctrl_vals();
-      _enable_controls(EN_ENABLE_ALL);
-      status("");
-      s_camera_state = CAM_UPTODATE;
+        *done = 1;
     }
-  }
-  else if (s_fsm_timeout) {
-    s_camera_state = CAM_DISCOVER;
-  }
-  else {
-    *done = 1;
-  }
 }
 
 static void
 _cam_sending1(bool *done)
 {
-  //  wxPrintf("dostate %s\n", __FUNCTION__);
-
-  if (s_fsm_got_ack) {
-    // restart timer for response
-    s_fsm_timeout = false;
-    s_fsm_timer->Start(1000, wxTIMER_ONE_SHOT);
-    s_camera_state = CAM_SENDING2;
-    *done = true;
-  }
-  else if (s_fsm_timeout) {
-    s_camera_state = CAM_DISCOVER;
-  }
-  else
-    *done = true;
+    if (s_fsm_got_ack) {
+        // restart timer for response
+        s_fsm_timeout = false;
+        s_fsm_timer->Start(RESPONSE_TIMEOUT_MS, wxTIMER_ONE_SHOT);
+        s_camera_state = CAM_SENDING2;
+        *done = true;
+    }
+    else if (s_fsm_timeout) {
+        s_camera_state = CAM_DISCOVER;
+    }
+    else
+        *done = true;
 }
 
 static void
 _cam_sending2(bool *done)
 {
-  //  wxPrintf("dostate %s\n", __FUNCTION__);
-
-  if (s_fsm_response.stx == STX) {
-    // got response
-    s_fsm_timer->Stop();
-    mcxcomm_send_ack();
-    s_camera_state = CAM_UPTODATE;
-  }
-  else if (s_fsm_timeout) {
-    s_camera_state = CAM_DISCOVER;
-  }
-  else
-    *done = true;
+    if (s_fsm_got_response) {
+// TODO: handle NAK or other error response
+        s_fsm_timer->Stop();
+        mcxcomm_send_ack();
+        s_camera_state = CAM_UPTODATE;
+    }
+    else if (s_fsm_timeout) {
+        s_camera_state = CAM_DISCOVER;
+    }
+    else
+        *done = true;
 }
 
 static void
 _cam_uptodate(bool *done)
 {
-  //  wxPrintf("dostate %s\n", __FUNCTION__);
+  //  wxLogDebug("dostate %s", __FUNCTION__);
 
   cmdmap_t::iterator it = s_cmdmap.begin();
 
@@ -1305,14 +1332,14 @@ _cam_uptodate(bool *done)
     s_active_cmd = it->second;
     s_cmdmap.erase(it);
 
-    wxPrintf("send_cmd: [%s]\n", _readable(s_active_cmd));
+    wxLogDebug("send_cmd: [%s]", _readable(s_active_cmd));
 
     s_fsm_got_ack = false;
-    s_fsm_response.stx = 0;
+    s_fsm_got_response = false;
     mcxcomm_send_msg(s_active_cmd);
 
     s_fsm_timeout = false;
-    s_fsm_timer->Start(1000, wxTIMER_ONE_SHOT);
+    s_fsm_timer->Start(ACK_TIMEOUT_MS, wxTIMER_ONE_SHOT);
 
     s_camera_state = CAM_SENDING1;
   }
@@ -1323,7 +1350,7 @@ _cam_uptodate(bool *done)
 static void
 _cam_shutting_down(bool *done)
 {
-  wxPrintf("dostate %s TODO\n", __FUNCTION__);
+  wxLogDebug("dostate %s TODO", __FUNCTION__);
   *done = true;
   // todo
 }
@@ -1355,7 +1382,7 @@ _int_init1(bool *done)
 {
   // setup for integration
 
-  //  wxPrintf("INT_FSM %s\n", __FUNCTION__);
+  //  wxLogDebug("INT_FSM %s", __FUNCTION__);
 
   _win()->m_intBtn->SetLabel("Stop");
 
@@ -1403,10 +1430,10 @@ _int_int1(bool *done)
 {
   // start integration timers
 
-  //  wxPrintf("INT_FSM %s\n", __FUNCTION__);
+  //  wxLogDebug("INT_FSM %s", __FUNCTION__);
   s_int_stopwatch->Start();
   s_int_timer->Start(500, wxTIMER_CONTINUOUS);
-  //  wxPrintf("send sync=vbs\n");
+  //  wxLogDebug("send sync=vbs");
   s_cam1.sync = SYNC_VBS;
   dnotify(UPD_IMMEDIATE);
   _int_status(0);
@@ -1419,7 +1446,7 @@ _int_int2(bool *done)
 {
   // handle events during integration
 
-  //  wxPrintf("INT_FSM %s\n", __FUNCTION__);
+  //  wxLogDebug("INT_FSM %s", __FUNCTION__);
 
   if (s_int_stop_clicked) {
     s_int_timer->Stop();
@@ -1444,10 +1471,10 @@ _int_capture1(bool *done)
 {
   // wait for commands to drain; revert sync to int
 
-  //  wxPrintf("INT_FSM %s\n", __FUNCTION__);
+  //  wxLogDebug("INT_FSM %s", __FUNCTION__);
 
   if (!_camera_cmds_in_flight()) {
-    //wxPrintf("todo: send sync=int\n");
+    //wxLogDebug("todo: send sync=int");
     s_cam1.sync = SYNC_INT;
     dnotify(UPD_IMMEDIATE);
     if (s_int_stop_clicked)
@@ -1468,7 +1495,7 @@ _int_capture2(bool *done)
 {
   // wait for trigger timer
 
-  //  wxPrintf("INT_FSM %s\n", __FUNCTION__);
+  //  wxLogDebug("INT_FSM %s", __FUNCTION__);
 
   if (s_int_timer_expired)
     s_int_state = INT_INT1;
@@ -1481,7 +1508,7 @@ _int_capture2(bool *done)
 static void
 _int_stop(bool *done)
 {
-  //  wxPrintf("INT_FSM %s\n", __FUNCTION__);
+  //  wxLogDebug("INT_FSM %s", __FUNCTION__);
   _win()->m_intBtn->SetLabel("Start");
   _win()->EnableControls(EN_ENABLE_ALL);
   s_int_state = INT_STOPPED;
@@ -1634,7 +1661,6 @@ ___do_camera_fsm()
     switch (s_camera_state) {
     case CAM_INIT:          _cam_init(&done);          break;
     case CAM_DISCONNECTED:  _cam_disconnected(&done);  break;
-    case CAM_CONNECTING:    _cam_connecting(&done);    break;
     case CAM_DISCOVER:      _cam_discover(&done);      break;
     case CAM_DISCOVERING:   _cam_discovering(&done);   break;
     case CAM_READING1:      _cam_reading1(&done);      break;
@@ -1654,13 +1680,13 @@ ___do_camera_fsm()
 static void
 __do_camera_fsm()
 {
-  //  wxPrintf("_DO_FSM enter\n");
+  //  wxLogDebug("_DO_FSM enter");
 
   ___do_camera_fsm();
   _do_int_fsm();
   _do_agc_wait_fsm();
 
-  //  wxPrintf("_DO_FSM exit\n");
+  //  wxLogDebug("_DO_FSM exit");
 }
 
 static void
@@ -2126,6 +2152,21 @@ MainFrameD::coronagraphScroll(wxScrollEvent& event)
 }
 
 void
+MainFrameD::portChoice(wxCommandEvent& event)
+{
+    wxString port = m_port->GetStringSelection();
+
+    {
+        wxMutexLocker _l(*s_cfg_lock);
+        s_cfg.cfg_serial_port = port;
+    }
+
+    wxConfig::Get()->Write("CommPort", port);
+
+    _do_camera_fsm();
+}
+
+void
 MainFrameD::doEnablesForWtb()
 {
   if (m_atwBtn->GetValue()) {
@@ -2334,39 +2375,42 @@ MainFrameD::titleText(wxCommandEvent& event)
 void
 MainFrameD::dsClicked(wxCommandEvent& event)
 {
-  wxPrintf("%s\n", __FUNCTION__);
+  wxLogDebug("%s", __FUNCTION__);
   // todo: load ds presets
 }
 
 void
 MainFrameD::plClicked(wxCommandEvent& event)
 {
-  wxPrintf("%s\n", __FUNCTION__);
+  wxLogDebug("%s", __FUNCTION__);
   // todo: load ds presets
 }
 
 void
 MainFrameD::luClicked(wxCommandEvent& event)
 {
-  wxPrintf("%s\n", __FUNCTION__);
+  wxLogDebug("%s", __FUNCTION__);
+  // todo
 }
 
 void
 MainFrameD::ldClicked(wxCommandEvent& event)
 {
-  wxPrintf("%s\n", __FUNCTION__);
+  wxLogDebug("%s", __FUNCTION__);
+  // todo
 }
 
 void
 MainFrameD::svClicked(wxCommandEvent& event)
 {
-  wxPrintf("%s\n", __FUNCTION__);
+  wxLogDebug("%s", __FUNCTION__);
+  // todo
 }
 
 void
 MainFrameD::xhClicked(wxCommandEvent& event)
 {
-  wxPrintf("%s\n", __FUNCTION__);
+  wxLogDebug("%s", __FUNCTION__);
   bool on = m_toolBar->GetToolState(ID_CROSS_HAIRS);
   if (on) {
     m_toolBar->ToggleTool(ID_CROSS_BOX, false);
@@ -2377,7 +2421,7 @@ MainFrameD::xhClicked(wxCommandEvent& event)
 void
 MainFrameD::xbClicked(wxCommandEvent& event)
 {
-  wxPrintf("%s\n", __FUNCTION__);
+  wxLogDebug("%s", __FUNCTION__);
   bool on = m_toolBar->GetToolState(ID_CROSS_BOX);
   if (on) {
     m_toolBar->ToggleTool(ID_CROSS_HAIRS, false);
@@ -2388,43 +2432,55 @@ MainFrameD::xbClicked(wxCommandEvent& event)
 void
 MainFrameD::cbClicked(wxCommandEvent& event)
 {
-  wxPrintf("%s\n", __FUNCTION__);
+    bool cb_on = m_toolBar->GetToolState(ID_COLOR_BARS);
+    s_cam1.colorBars = cb_on ? 1 : 0;
+    dnotify(UPD_IMMEDIATE);
 }
 
 void
 MainFrameD::rhClicked(wxCommandEvent& event)
 {
-  wxPrintf("%s\n", __FUNCTION__);
+    bool rh_on = m_toolBar->GetToolState(ID_H_REV);
+    s_cam1.hRev = rh_on ? 1 : 0;
+    dnotify(UPD_IMMEDIATE);
 }
 
 void
 MainFrameD::rvClicked(wxCommandEvent& event)
 {
-  wxPrintf("%s\n", __FUNCTION__);
+    bool rv_on = m_toolBar->GetToolState(ID_V_REV);
+    s_cam1.vRev = rv_on ? 1 : 0;
+    dnotify(UPD_IMMEDIATE);
 }
 
 void
 MainFrameD::ngClicked(wxCommandEvent& event)
 {
-  wxPrintf("%s\n", __FUNCTION__);
+    bool neg_on = m_toolBar->GetToolState(ID_NEGATIVE);
+    s_cam1.neg = neg_on ? 1 : 0;
+    dnotify(UPD_IMMEDIATE);
 }
 
 void
 MainFrameD::fzClicked(wxCommandEvent& event)
 {
-  wxPrintf("%s\n", __FUNCTION__);
+    bool freeze_on = m_toolBar->GetToolState(ID_FREEZE);
+    s_cam1.freeze = freeze_on ? 1 : 0;
+    dnotify(UPD_IMMEDIATE);
 }
 
 void
 MainFrameD::ccClicked(wxCommandEvent& event)
 {
-  wxPrintf("%s id=%d\n", __FUNCTION__, event.GetId());
+    wxLogDebug("%s id=%d", __FUNCTION__, event.GetId());
+    // TODO
 }
 
 void
 MainFrameD::sleepClicked(wxCommandEvent& event)
 {
-  wxPrintf("%s id=%d\n", __FUNCTION__, event.GetId());
+    wxLogDebug("%s id=%d", __FUNCTION__, event.GetId());
+    // todo
 }
 
 void
@@ -2442,7 +2498,7 @@ MainFrameD::OnTimer(wxTimerEvent& event)
     _dnotify();
     break;
   case ID_FSM_TIMER:
-    wxPrintf("fsm timeout\n");
+    wxLogDebug("fsm timeout");
     s_fsm_timeout = true;
     _do_camera_fsm();
     break;
@@ -2460,34 +2516,45 @@ MainFrameD::OnTimer(wxTimerEvent& event)
 void
 MainFrameD::OnMcxMsg(McxMsgEvent& event)
 {
-  //  wxPrintf("got mcx msg %u\n", event.evt_msgtype);
+  //  wxLogDebug("got mcx msg %u", event.evt_msgtype);
 
-  switch (event.evt_msgtype) {
-  case RDR_CONNECTED:
-    s_reader_connected = 1;
-    break;
-  case RDR_CONNECT_FAILED:
-    s_reader_connected = 0;
-    break;
-  case RDR_MSG:
-wxPrintf("got %s\n", event.evt_msg.stx == ACK ? "ACK" : "response");
-// todo: handle NAK and EOT
-    if (event.evt_msg.stx == ACK)
-      s_fsm_got_ack = true;
-    else {
-      wxPrintf("recvd: [%s]\n", _readable(event.evt_msg));
-      s_fsm_response = event.evt_msg;
+    switch (event.evt_msgtype) {
+    case RDR_CONNECTED:
+        s_reader_connected = true;
+        break;
+    case RDR_CONNECT_FAILED:
+        s_reader_connected = false;
+        break;
+    case RDR_MSG:
+{
+ const char *s;
+ switch (event.evt_msg.stx) {
+ case ACK: s = "ACK"; break;
+ case STX: s = "response/ok"; break;
+ case NAK: s = "response/NAK"; break;
+ case EOT: s = "response/EOT"; break;
+ default: s = "???"; break;
+ }
+ wxLogDebug("got %s", s);
+}
+        // todo: handle NAK and EOT
+        if (event.evt_msg.stx == ACK)
+            s_fsm_got_ack = true;
+        else {
+            wxLogDebug("recvd: [%s]", _readable(event.evt_msg));
+            s_fsm_response = event.evt_msg;
+            s_fsm_got_response = true;
+        }
+        break;
     }
-    break;
-  }
 
-  _do_camera_fsm();
+    _do_camera_fsm();
 }
 
 void
 MainFrameD::EnableControls(EnableType how)
 {
-  wxPrintf("enable controls %d\n", how);
+  wxLogDebug("enable controls %d", how);
 
   bool enable;
   bool for_int;
@@ -2563,14 +2630,42 @@ MainFrameD::EnableControls(EnableType how)
   //  m_toolBar->Enable(enable);
 }
 
+static void
+_start_reader_thread()
+{
+    wxLogDebug("starting reader thread");
+    ReaderThread *const thread = new ReaderThread(_win());
+    thread->Create();
+    thread->Run();
+    s_reader = thread;
+}
+
 bool
 McxApp::OnInit()
 {
-    wxFrame *frame = new MainFrameD(0);
+    SetAppName("MCXControl");
+    SetVendorName("adgsoftware");
+
+    s_cfg_lock = new wxMutex();
+
+    mcxcomm_init();
+
+    MainFrameD *frame = new MainFrameD(0);
+
+    wxString port;
+    wxConfig::Get()->Read("CommPort", &port, "COM1");
+    frame->m_port->SetStringSelection(port);
+
+    {
+        wxMutexLocker _l(*s_cfg_lock);
+        s_cfg.cfg_serial_port = port;
+    }
+
     frame->Show(true);
     SetTopWindow(frame);
-//fixme:testing
-s_cfg.cfg_serial_port = "[simulated]";
+
+    _start_reader_thread();
+
     _do_camera_fsm();
     return true;
 }
@@ -2578,10 +2673,14 @@ s_cfg.cfg_serial_port = "[simulated]";
 int
 McxApp::OnExit()
 {
-  if (s_reader) {
-    wxPrintf("APP EXIT DELETE RDR\n");
-    s_reader->Delete();
-    s_reader = 0;
-  }
-  return inherited::OnExit();
+    if (s_reader) {
+        s_reader->m_terminated = true;
+        wxLogDebug("APP EXIT WAIT RDR start");
+        s_reader->Wait();
+        wxLogDebug("APP EXIT WAIT RDR done");
+        delete s_reader;
+        s_reader = 0;
+    }
+    return 0;
+//  return inherited::OnExit(); // todo
 }

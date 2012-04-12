@@ -286,23 +286,18 @@ wxLogDebug("%s CreateFile(%s) returned invalid file handle",__FUNCTION__,devname
 }
 
 int
-SerialPort::Read(char* buf,size_t len)
+SerialPort::Read(char* buf, size_t len)
 {
     DWORD read;
-    if (!ReadFile(fd,buf,len,&read,&m_ov)) {
-        // if we use a asynchrone reading, ReadFile gives always
-        // FALSE
-        // ERROR_IO_PENDING means ok, other values show an error
-        if(GetLastError() != ERROR_IO_PENDING) {
-            // oops..., error in communication
-            return -1;
-        }
-    }
-    else {
-        // ok, we have read all wanted bytes
+
+    if (ReadFile(fd, buf, len, &read, &m_ov))
         return read;
-    }
-    return 0;
+
+    if (GetLastError() == ERROR_IO_PENDING)
+        return 0;
+
+    wxLogDebug("SerialPort read failed");
+    return -1;
 }
 
 int
@@ -311,6 +306,7 @@ SerialPort::Write(char* buf,size_t len)
     DWORD write;
     if (!WriteFile(fd,buf,len,&write,&m_ov)) {
         if(GetLastError() != ERROR_IO_PENDING) {
+            wxLogDebug("SerialPort write failed");
             return -1;
         }
         else {
@@ -319,7 +315,7 @@ SerialPort::Write(char* buf,size_t len)
             FlushFileBuffers(fd);
             // first you must call GetOverlappedResult, then you
             // get the REALLY transmitted count of bytes
-            if(!GetOverlappedResult(fd,&m_ov,&write,TRUE)) {
+            if (!GetOverlappedResult(fd,&m_ov,&write,TRUE)) {
                 // ooops... something is going wrong
                 return write;
             }
@@ -350,13 +346,14 @@ wxLogDebug("%s %p %s",__FUNCTION__,s_dev,filename);
 void
 mcxcomm_disconnect()
 {
+wxLogDebug("%s",__FUNCTION__);
     s_dev->Close();
 }
 
 static bool
 _send1(char val)
 {
-wxLogDebug("%s %p",__FUNCTION__,s_dev);
+    wxLogDebug("%s 0x%x",__FUNCTION__,(unsigned int) val);
     int tries = 0;
     while (true) {
         int ret = s_dev->Write(&val, sizeof(val));
@@ -383,17 +380,22 @@ mcxcomm_send_ack()
 bool
 mcxcomm_send_msg(const msg& cmd)
 {
-wxLogDebug("%s %p",__FUNCTION__,s_dev);
+    wxLogDebug("%s %02x %02x %02x %02x %02x %02x",__FUNCTION__,cmd.stx,cmd.cmdrsp,cmd.ctrl,cmd.data[0], cmd.data[1], cmd.data[2]);
+
     unsigned int tries = 0;
     const char *p = (const char *) &cmd;
     unsigned int rem = sizeof(cmd);
     while (rem > 0) {
         int n = s_dev->Write(const_cast<char *>(p), rem);
-        if (n < 0)
+        if (n < 0) {
+            wxLogDebug("SerialPort write failed");
             return false;
+        }
         if (n == 0) {
-            if (++tries >= 50)
+            if (++tries >= 50) {
+                wxLogDebug("SerialPort write timed-out");
                 return false;
+            }
             wxMilliSleep(10);
             continue;
         }
@@ -425,17 +427,20 @@ _read_n(void *buf, size_t n, const wxStopWatch& timer, unsigned int timeout_ms, 
         p += n;
         rem -= n;
     }
+    *err = false;
     return true;
 }
 
 bool
 mcxcomm_recv(msg *msg, unsigned int timeout_ms, bool *err)
 {
-wxLogDebug("%s %p",__FUNCTION__,s_dev);
     wxStopWatch timer;
 
-    if (!_read_n(&msg->stx, 1, timer, timeout_ms, err))
+    if (!_read_n(&msg->stx, 1, timer, timeout_ms, err)) {
+if (*err) wxLogDebug("%s fail reading 1 byte",__FUNCTION__);
         return false;
+    }
+wxLogDebug("recv 0x%x",msg->stx);
 
     if (msg->stx == STX) {
         if (!_read_n(&msg->cmdrsp, sizeof(*msg) - 1, timer, timeout_ms, err))

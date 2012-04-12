@@ -12,8 +12,10 @@ enum {
 enum {
   STX = 0x2,
   ETX = 0x3,
+  EOT = 0x4,
   ENQ = 0x5,
   ACK = 0x6,
+  NAK = 0x15,
 };
 
 struct msg
@@ -33,9 +35,10 @@ extern void mcxcmd_get(msg *msg, u8 item);
 extern void mcxcmd_dump(char *buf, size_t len, const msg *msg);
 
 extern bool mcxcomm_connect(const char *filename);
+extern void mcxcomm_disconnect();
 extern bool mcxcomm_send_enq();
 extern bool mcxcomm_send_ack();
 extern bool mcxcomm_send_msg(const msg& msg);
-extern bool mcxcomm_recv(msg *msg, unsigned int timeout_ms);
+extern bool mcxcomm_recv(msg *msg, unsigned int timeout_ms, bool *err);
 
 #endif

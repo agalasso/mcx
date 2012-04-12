@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Feb 18 2012)
+// C++ code generated with wxFormBuilder (version Feb  9 2012)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -324,24 +324,6 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	gbSizer2->Add( wtbSizer, wxGBPosition( 3, 1 ), wxGBSpan( 1, 1 ), wxEXPAND, 5 );
 	
-	wxBoxSizer* prioritySizer;
-	prioritySizer = new wxBoxSizer( wxHORIZONTAL );
-	
-	wxBoxSizer* bSizer25;
-	bSizer25 = new wxBoxSizer( wxVERTICAL );
-	
-	
-	prioritySizer->Add( bSizer25, 1, wxEXPAND, 5 );
-	
-	wxString m_priorityChoices[] = { wxT("AGC"), wxT("Sense") };
-	int m_priorityNChoices = sizeof( m_priorityChoices ) / sizeof( wxString );
-	m_priority = new wxRadioBox( this, wxID_ANY, wxT("Priority"), wxDefaultPosition, wxDefaultSize, m_priorityNChoices, m_priorityChoices, 1, wxRA_SPECIFY_COLS );
-	m_priority->SetSelection( 0 );
-	prioritySizer->Add( m_priority, 0, wxALL, 5 );
-	
-	
-	gbSizer2->Add( prioritySizer, wxGBPosition( 4, 2 ), wxGBSpan( 1, 1 ), wxEXPAND, 5 );
-	
 	wxStaticBoxSizer* tecSizer;
 	tecSizer = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("TEC") ), wxVERTICAL );
 	
@@ -390,6 +372,106 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	gbSizer2->Add( tecSizer, wxGBPosition( 2, 0 ), wxGBSpan( 2, 1 ), 0, 5 );
 	
+	wxBoxSizer* gammaGroupSizer;
+	gammaGroupSizer = new wxBoxSizer( wxVERTICAL );
+	
+	wxBoxSizer* gammaSizer;
+	gammaSizer = new wxBoxSizer( wxHORIZONTAL );
+	
+	m_staticText3 = new wxStaticText( this, wxID_ANY, wxT("Gamma"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText3->Wrap( -1 );
+	gammaSizer->Add( m_staticText3, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	m_gamma = new wxSlider( this, wxID_ANY, 0, 0, 1, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
+	m_gamma->SetMinSize( wxSize( 160,-1 ) );
+	
+	gammaSizer->Add( m_gamma, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	m_gammaVal = new wxStaticText( this, wxID_ANY, wxT("0.45"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_gammaVal->Wrap( -1 );
+	gammaSizer->Add( m_gammaVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	
+	gammaGroupSizer->Add( gammaSizer, 0, wxEXPAND, 5 );
+	
+	wxBoxSizer* zoomSizer;
+	zoomSizer = new wxBoxSizer( wxHORIZONTAL );
+	
+	m_staticText4 = new wxStaticText( this, wxID_ANY, wxT("Zoom"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText4->Wrap( -1 );
+	zoomSizer->Add( m_staticText4, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	m_zoom = new wxSlider( this, wxID_ANY, 0, 0, 9, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
+	m_zoom->SetMinSize( wxSize( 160,-1 ) );
+	
+	zoomSizer->Add( m_zoom, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	m_zoomVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_zoomVal->Wrap( -1 );
+	zoomSizer->Add( m_zoomVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	
+	gammaGroupSizer->Add( zoomSizer, 0, wxEXPAND, 5 );
+	
+	wxBoxSizer* coronagraphSizer;
+	coronagraphSizer = new wxBoxSizer( wxHORIZONTAL );
+	
+	m_staticText5 = new wxStaticText( this, wxID_ANY, wxT("Coronagraph"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText5->Wrap( -1 );
+	coronagraphSizer->Add( m_staticText5, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	m_coronagraph = new wxSlider( this, wxID_ANY, 0, 0, 8, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
+	m_coronagraph->SetMinSize( wxSize( 160,-1 ) );
+	
+	coronagraphSizer->Add( m_coronagraph, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	m_coronagraphVal = new wxStaticText( this, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_coronagraphVal->Wrap( -1 );
+	coronagraphSizer->Add( m_coronagraphVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	
+	gammaGroupSizer->Add( coronagraphSizer, 0, wxEXPAND, 5 );
+	
+	
+	gammaGroupSizer->Add( 0, 0, 1, wxEXPAND, 5 );
+	
+	wxBoxSizer* prioritySizer;
+	prioritySizer = new wxBoxSizer( wxHORIZONTAL );
+	
+	
+	prioritySizer->Add( 0, 0, 1, wxEXPAND, 5 );
+	
+	label1 = new wxStaticText( this, wxID_ANY, wxT("Port"), wxDefaultPosition, wxDefaultSize, 0 );
+	label1->Wrap( -1 );
+	prioritySizer->Add( label1, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	wxString m_portChoices[] = { wxT("COM1"), wxT("COM2"), wxT("COM3"), wxT("COM4"), wxT("COM5"), wxT("COM6"), wxT("COM7"), wxT("COM8"), wxT("COM9"), wxT("COM10"), wxT("COM11"), wxT("COM12"), wxT("COM13"), wxT("COM14"), wxT("COM15"), wxT("COM16"), wxT("COM17"), wxT("COM18"), wxT("COM19"), wxT("COM20") };
+	int m_portNChoices = sizeof( m_portChoices ) / sizeof( wxString );
+	m_port = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_portNChoices, m_portChoices, 0 );
+	m_port->SetSelection( 0 );
+	prioritySizer->Add( m_port, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	
+	wxBoxSizer* bSizer25;
+	bSizer25 = new wxBoxSizer( wxVERTICAL );
+	
+	
+	prioritySizer->Add( bSizer25, 1, wxEXPAND, 5 );
+	
+	wxString m_priorityChoices[] = { wxT("AGC"), wxT("Sense") };
+	int m_priorityNChoices = sizeof( m_priorityChoices ) / sizeof( wxString );
+	m_priority = new wxRadioBox( this, wxID_ANY, wxT("Priority"), wxDefaultPosition, wxDefaultSize, m_priorityNChoices, m_priorityChoices, 1, wxRA_SPECIFY_COLS );
+	m_priority->SetSelection( 0 );
+	prioritySizer->Add( m_priority, 0, wxALL, 5 );
+	
+	
+	gammaGroupSizer->Add( prioritySizer, 1, wxEXPAND, 5 );
+	
+	
+	gbSizer2->Add( gammaGroupSizer, wxGBPosition( 2, 2 ), wxGBSpan( 2, 1 ), 0, 5 );
+	
+	wxBoxSizer* titleGroupSizer;
+	titleGroupSizer = new wxBoxSizer( wxVERTICAL );
+	
 	wxStaticBoxSizer* titleSizer;
 	titleSizer = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, wxT("Title") ), wxVERTICAL );
 	
@@ -416,16 +498,16 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	gSizer2->Add( m_titleBR, 0, wxALL|wxALIGN_RIGHT, 5 );
 	
 	
-	sbSizer15->Add( gSizer2, 1, wxEXPAND, 5 );
+	sbSizer15->Add( gSizer2, 0, 0, 5 );
 	
 	
-	bSizer6->Add( sbSizer15, 1, wxEXPAND, 5 );
+	bSizer6->Add( sbSizer15, 0, 0, 5 );
 	
 	
 	bSizer6->Add( 0, 0, 1, wxEXPAND, 5 );
 	
 	
-	titleSizer->Add( bSizer6, 1, wxEXPAND, 5 );
+	titleSizer->Add( bSizer6, 0, 0, 5 );
 	
 	wxBoxSizer* bSizer7;
 	bSizer7 = new wxBoxSizer( wxHORIZONTAL );
@@ -437,70 +519,10 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	titleSizer->Add( bSizer7, 0, wxEXPAND, 5 );
 	
 	
-	gbSizer2->Add( titleSizer, wxGBPosition( 0, 2 ), wxGBSpan( 2, 1 ), wxEXPAND, 5 );
-	
-	wxBoxSizer* gammaSizer;
-	gammaSizer = new wxBoxSizer( wxVERTICAL );
-	
-	wxBoxSizer* bSizer2;
-	bSizer2 = new wxBoxSizer( wxHORIZONTAL );
-	
-	m_staticText3 = new wxStaticText( this, wxID_ANY, wxT("Gamma"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText3->Wrap( -1 );
-	bSizer2->Add( m_staticText3, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
-	
-	m_gamma = new wxSlider( this, wxID_ANY, 0, 0, 1, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
-	m_gamma->SetMinSize( wxSize( 160,-1 ) );
-	
-	bSizer2->Add( m_gamma, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
-	
-	m_gammaVal = new wxStaticText( this, wxID_ANY, wxT("0.45"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
-	m_gammaVal->Wrap( -1 );
-	bSizer2->Add( m_gammaVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	titleGroupSizer->Add( titleSizer, 0, wxEXPAND, 5 );
 	
 	
-	gammaSizer->Add( bSizer2, 1, wxEXPAND, 5 );
-	
-	wxBoxSizer* bSizer3;
-	bSizer3 = new wxBoxSizer( wxHORIZONTAL );
-	
-	m_staticText4 = new wxStaticText( this, wxID_ANY, wxT("Zoom"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText4->Wrap( -1 );
-	bSizer3->Add( m_staticText4, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
-	
-	m_zoom = new wxSlider( this, wxID_ANY, 0, 0, 9, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
-	m_zoom->SetMinSize( wxSize( 160,-1 ) );
-	
-	bSizer3->Add( m_zoom, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
-	
-	m_zoomVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
-	m_zoomVal->Wrap( -1 );
-	bSizer3->Add( m_zoomVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
-	
-	
-	gammaSizer->Add( bSizer3, 1, wxEXPAND, 5 );
-	
-	wxBoxSizer* coronagraphSizer;
-	coronagraphSizer = new wxBoxSizer( wxHORIZONTAL );
-	
-	m_staticText5 = new wxStaticText( this, wxID_ANY, wxT("Coronagraph"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText5->Wrap( -1 );
-	coronagraphSizer->Add( m_staticText5, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
-	
-	m_coronagraph = new wxSlider( this, wxID_ANY, 0, 0, 8, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
-	m_coronagraph->SetMinSize( wxSize( 160,-1 ) );
-	
-	coronagraphSizer->Add( m_coronagraph, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
-	
-	m_coronagraphVal = new wxStaticText( this, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
-	m_coronagraphVal->Wrap( -1 );
-	coronagraphSizer->Add( m_coronagraphVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
-	
-	
-	gammaSizer->Add( coronagraphSizer, 1, wxEXPAND, 5 );
-	
-	
-	gbSizer2->Add( gammaSizer, wxGBPosition( 2, 2 ), wxGBSpan( 2, 1 ), 0, 5 );
+	gbSizer2->Add( titleGroupSizer, wxGBPosition( 0, 2 ), wxGBSpan( 2, 1 ), wxEXPAND, 5 );
 	
 	
 	this->SetSizer( gbSizer2 );
@@ -662,7 +684,6 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	m_dewRemoval->Connect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( MainFrame::dewRemovalScroll ), NULL, this );
 	m_dewRemoval->Connect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( MainFrame::dewRemovalScroll ), NULL, this );
 	m_dewRemoval->Connect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( MainFrame::dewRemovalScroll ), NULL, this );
-	m_title->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( MainFrame::titleText ), NULL, this );
 	m_gamma->Connect( wxEVT_SCROLL_TOP, wxScrollEventHandler( MainFrame::gammaScroll ), NULL, this );
 	m_gamma->Connect( wxEVT_SCROLL_BOTTOM, wxScrollEventHandler( MainFrame::gammaScroll ), NULL, this );
 	m_gamma->Connect( wxEVT_SCROLL_LINEUP, wxScrollEventHandler( MainFrame::gammaScroll ), NULL, this );
@@ -690,6 +711,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	m_coronagraph->Connect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( MainFrame::coronagraphScroll ), NULL, this );
 	m_coronagraph->Connect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( MainFrame::coronagraphScroll ), NULL, this );
 	m_coronagraph->Connect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( MainFrame::coronagraphScroll ), NULL, this );
+	m_port->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( MainFrame::portChoice ), NULL, this );
+	m_title->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( MainFrame::titleText ), NULL, this );
 	this->Connect( ID_DSO, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::dsClicked ) );
 	this->Connect( ID_PLANET, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::plClicked ) );
 	this->Connect( ID_LUNAR, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::luClicked ) );
@@ -818,7 +841,6 @@ MainFrame::~MainFrame()
 	m_dewRemoval->Disconnect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( MainFrame::dewRemovalScroll ), NULL, this );
 	m_dewRemoval->Disconnect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( MainFrame::dewRemovalScroll ), NULL, this );
 	m_dewRemoval->Disconnect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( MainFrame::dewRemovalScroll ), NULL, this );
-	m_title->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( MainFrame::titleText ), NULL, this );
 	m_gamma->Disconnect( wxEVT_SCROLL_TOP, wxScrollEventHandler( MainFrame::gammaScroll ), NULL, this );
 	m_gamma->Disconnect( wxEVT_SCROLL_BOTTOM, wxScrollEventHandler( MainFrame::gammaScroll ), NULL, this );
 	m_gamma->Disconnect( wxEVT_SCROLL_LINEUP, wxScrollEventHandler( MainFrame::gammaScroll ), NULL, this );
@@ -846,6 +868,8 @@ MainFrame::~MainFrame()
 	m_coronagraph->Disconnect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( MainFrame::coronagraphScroll ), NULL, this );
 	m_coronagraph->Disconnect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( MainFrame::coronagraphScroll ), NULL, this );
 	m_coronagraph->Disconnect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( MainFrame::coronagraphScroll ), NULL, this );
+	m_port->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( MainFrame::portChoice ), NULL, this );
+	m_title->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( MainFrame::titleText ), NULL, this );
 	this->Disconnect( ID_DSO, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::dsClicked ) );
 	this->Disconnect( ID_PLANET, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::plClicked ) );
 	this->Disconnect( ID_LUNAR, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::luClicked ) );

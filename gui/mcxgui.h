@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Feb 18 2012)
+// C++ code generated with wxFormBuilder (version Feb  9 2012)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -23,6 +23,7 @@
 #include <wx/combobox.h>
 #include <wx/button.h>
 #include <wx/radiobut.h>
+#include <wx/choice.h>
 #include <wx/radiobox.h>
 #include <wx/textctrl.h>
 #include <wx/gbsizer.h>
@@ -93,18 +94,12 @@ class MainFrame : public wxFrame
 		wxStaticText* m_staticText171;
 		wxSlider* m_wtbBlue;
 		wxStaticText* m_wtbBlueVal;
-		wxRadioBox* m_priority;
 		wxStaticText* m_staticText21;
 		wxSlider* m_tecLevel;
 		wxStaticText* m_tecLevelVal;
 		wxStaticText* m_staticText23;
 		wxSlider* m_dewRemoval;
 		wxStaticText* m_dewRemovalVal;
-		wxRadioButton* m_titleTL;
-		wxRadioButton* m_titleTR;
-		wxRadioButton* m_titleBL;
-		wxRadioButton* m_titleBR;
-		wxTextCtrl* m_title;
 		wxStaticText* m_staticText3;
 		wxSlider* m_gamma;
 		wxStaticText* m_gammaVal;
@@ -114,6 +109,13 @@ class MainFrame : public wxFrame
 		wxStaticText* m_staticText5;
 		wxSlider* m_coronagraph;
 		wxStaticText* m_coronagraphVal;
+		wxStaticText* label1;
+		wxRadioBox* m_priority;
+		wxRadioButton* m_titleTL;
+		wxRadioButton* m_titleTR;
+		wxRadioButton* m_titleBL;
+		wxRadioButton* m_titleBR;
+		wxTextCtrl* m_title;
 		wxToolBar* m_toolBar;
 		
 		// Virtual event handlers, overide them in your derived class
@@ -138,10 +140,11 @@ class MainFrame : public wxFrame
 		virtual void wtbBlueScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void tecLevelScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void dewRemovalScroll( wxScrollEvent& event ) { event.Skip(); }
-		virtual void titleText( wxCommandEvent& event ) { event.Skip(); }
 		virtual void gammaScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void zoomScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void coronagraphScroll( wxScrollEvent& event ) { event.Skip(); }
+		virtual void portChoice( wxCommandEvent& event ) { event.Skip(); }
+		virtual void titleText( wxCommandEvent& event ) { event.Skip(); }
 		virtual void dsClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void plClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void luClicked( wxCommandEvent& event ) { event.Skip(); }
@@ -163,6 +166,7 @@ class MainFrame : public wxFrame
 		wxComboBox* m_int;
 		wxButton* m_intBtn;
 		wxSlider* m_agcMan;
+		wxChoice* m_port;
 		
 		MainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 		
