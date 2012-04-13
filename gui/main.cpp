@@ -1,3 +1,6 @@
+// TODO:
+//  disable/enable radio btns is sensing selected events and sending camera commands
+//  int not writeble?
 // TODO: disable controls disable labels to make more obvious?
 // TODO: top button functions
 //     load/save/presets
@@ -63,6 +66,7 @@ IMPLEMENT_APP(McxApp)
 enum {
   ID_DEFERRED_EVT_TIMER = 1,
   ID_FSM_TIMER,
+  ID_CMD_DELAY_TIMER,
   ID_INT_TIMER,
   ID_AGC_TIMER,
 };
@@ -125,6 +129,8 @@ static CameraState s_camera_state = CAM_INIT;
 static wxTimer *s_deferred_evt_timer;
 static wxTimer *s_fsm_timer;
 static bool s_fsm_timeout;
+static wxTimer *s_cmd_delay_timer;
+static bool s_cmd_delay_expired;
 static ReaderThread *s_reader;
 static bool s_reader_connected;
 static int s_fsm_next_smry;
@@ -534,12 +540,6 @@ _emit_mask_enable(bool enable)
 }
 
 static void
-_emit_cross_hairs()
-{
-    // todo
-}
-
-static void
 _emit_cross_box()
 {
 #if 1
@@ -566,7 +566,6 @@ _emit_mask(int mask)
 {
     switch (mask) {
     case 0: _emit_mask_enable(false); break;
-    case 1: _emit_cross_hairs(); _emit_mask_enable(true); break;
     case 2: _emit_cross_box(); _emit_mask_enable(true); break;
     }
 }
@@ -830,7 +829,7 @@ connect:
 
     while (!m_terminated) {
         bool err;
-        bool recvd = mcxcomm_recv(&evt.evt_msg, 1000, &err);
+        bool recvd = mcxcomm_recv(&evt.evt_msg, 1500, &err);
 
         if (err) {
             mcxcomm_disconnect();
@@ -889,7 +888,6 @@ public:
     void luClicked(wxCommandEvent& event);
     void ldClicked(wxCommandEvent& event);
     void svClicked(wxCommandEvent& event);
-    void xhClicked(wxCommandEvent& event);
     void xbClicked(wxCommandEvent& event);
     void cbClicked(wxCommandEvent& event);
     void rhClicked(wxCommandEvent& event);
@@ -949,6 +947,7 @@ MainFrameD::MainFrameD(wxWindow *parent)
 	  NULL, this);
   s_deferred_evt_timer = new wxTimer(this, ID_DEFERRED_EVT_TIMER);
   s_fsm_timer = new wxTimer(this, ID_FSM_TIMER);
+  s_cmd_delay_timer = new wxTimer(this, ID_CMD_DELAY_TIMER);
   s_int_stopwatch = new wxStopWatch();
   s_int_timer = new wxTimer(this, ID_INT_TIMER);
   s_agc_timer = new wxTimer(this, ID_AGC_TIMER);
@@ -959,6 +958,7 @@ MainFrameD::~MainFrameD()
 {
   delete s_deferred_evt_timer;
   delete s_fsm_timer;
+  delete s_cmd_delay_timer;
   delete s_int_timer;
   delete s_agc_timer;
 }
@@ -1015,7 +1015,9 @@ _handle_smry_2()
   s_cam0.wtbBlue = s_fsm_response.data[9];
   s_cam0.wtbRed = s_fsm_response.data[10];
   s_cam0.zoom = s_fsm_response.data[11];
-  s_cam0.zoomLevel = s_fsm_response.data[12];
+  u8 titleOn = s_fsm_response.data[12];
+  if (!titleOn)
+      s_cam0.title = "";
 }
 
 static void
@@ -1266,15 +1268,14 @@ _cam_reading2(bool *done)
 
         s_fsm_timer->Stop();
 
-        if (s_fsm_response.stx == STX) {
-            mcxcomm_send_ack();
+        mcxcomm_send_ack();
+wxMilliSleep(COMMAND_DELAY_MS);
 #if 0
-            _handle_smry();
+        _handle_smry();
 #else
-            if (s_fsm_response.ctrl == 0x45)
-                _handle_smry();
+        if (s_fsm_response.ctrl == 0x45)
+            _handle_smry();
 #endif
-        }
 
 #if 0
         if (++s_fsm_next_smry < 7) {
@@ -1346,8 +1347,8 @@ _cam_sending2(bool *done)
         s_fsm_timer->Stop();
         mcxcomm_send_ack();
 
-        s_fsm_timeout = false;
-        s_fsm_timer->Start(COMMAND_DELAY_MS, wxTIMER_ONE_SHOT);
+        s_cmd_delay_expired = false;
+        s_cmd_delay_timer->Start(COMMAND_DELAY_MS, wxTIMER_ONE_SHOT);
         s_camera_state = CAM_DELAY;
         *done = true;
     }
@@ -1361,7 +1362,7 @@ _cam_sending2(bool *done)
 static void
 _cam_delay(bool *done)
 {
-    if (s_fsm_timeout)
+    if (s_cmd_delay_expired)
         s_camera_state = CAM_UPTODATE;
     else
         *done = true;
@@ -1564,6 +1565,7 @@ _do_int_fsm()
   bool done = false;
 
   do {
+//if (s_int_state != INT_STOPPED) wxLogDebug("intfsm st=%d",s_int_state);
     switch (s_int_state) {
     case INT_STOPPED:  done = true;          break;
     case INT_INIT1:    _int_init1(&done);    break;
@@ -1818,6 +1820,17 @@ MainFrameD::senseUpScroll(wxScrollEvent&)
   int const val[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
   int const p = m_senseUp->GetValue();
   wxASSERT(p >= 0 && p < lengthof(val));
+
+  if (p > 0) {
+    wxScrollEvent ev(wxEVT_SCROLL_TOP);
+    // set ALC off
+    m_alc->SetValue(0);
+    m_alc->GetEventHandler()->ProcessEvent(ev);
+    // set ELC off
+    m_elc->SetValue(0);
+    m_elc->GetEventHandler()->ProcessEvent(ev);
+  }
+
   s_cam1.senseUp = val[p];
   dnotify(UPD_DEFER);
 }
@@ -1858,18 +1871,22 @@ MainFrameD::alcScroll(wxScrollEvent& event)
 void
 MainFrameD::intTextEnter(wxCommandEvent& event)
 {
+wxLogDebug("inttextenter");
   _update_int_time();
 }
 
 void
 MainFrameD::intKillFocus(wxFocusEvent& event)
 {
+wxLogDebug("intkillfocus");
   _update_int_time();
+  event.Skip();
 }
 
 void
 MainFrameD::intCombobox(wxCommandEvent& event)
 {
+wxLogDebug("intcombobox");
   _update_int_time();
 }
 
@@ -2322,7 +2339,6 @@ MainFrameD::InitControls(Camera *cam)
 
   cam->mask = 0; // off - don't persist this
   m_toolBar->ToggleTool(ID_CROSS_BOX, false);
-  m_toolBar->ToggleTool(ID_CROSS_HAIRS, false);
 
   m_toolBar->ToggleTool(ID_NEGATIVE, cam->neg == 1);
   m_toolBar->ToggleTool(ID_H_REV, cam->hRev == 1);
@@ -2368,46 +2384,51 @@ MainFrameD::InitControls(Camera *cam)
 }
 
 void
-MainFrameD::atwSelected(wxCommandEvent&)
+MainFrameD::atwSelected(wxCommandEvent& event)
 {
-  doEnablesForWtb();
-  s_cam1.wtb = 0; // atw
-  dnotify(UPD_IMMEDIATE);
+//wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_atwBtn->GetValue(),m_atwBtn->IsEnabled());
+    doEnablesForWtb();
+    s_cam1.wtb = 0; // atw
+    dnotify(UPD_IMMEDIATE);
 }
 
 void
 MainFrameD::awcSelected(wxCommandEvent& event)
 {
-  doEnablesForWtb();
-  s_cam1.wtb = 1; // awc
-  dnotify(UPD_IMMEDIATE);
+//wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_awcBtn->GetValue(),m_awcBtn->IsEnabled());
+    doEnablesForWtb();
+    s_cam1.wtb = 1; // awc
+    dnotify(UPD_IMMEDIATE);
 }
 
 void
 MainFrameD::wtbRBSelected(wxCommandEvent& event)
 {
-  doEnablesForWtb();
-  s_cam1.wtb = 2; // manual
-  s_cam1.wtbMan = 2; // user
-  dnotify(UPD_IMMEDIATE);
+//wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtbRbBtn->GetValue(),m_wtbRbBtn->IsEnabled());
+    doEnablesForWtb();
+    s_cam1.wtb = 2; // manual
+    s_cam1.wtbMan = 2; // user
+    dnotify(UPD_IMMEDIATE);
 }
 
 void
 MainFrameD::wtb3200Selected(wxCommandEvent& event)
 {
-  doEnablesForWtb();
-  s_cam1.wtb = 2; // manual
-  s_cam1.wtbMan = 0; // 3200
-  dnotify(UPD_IMMEDIATE);
+//wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtb3200Btn->GetValue(),m_wtb3200Btn->IsEnabled());
+    doEnablesForWtb();
+    s_cam1.wtb = 2; // manual
+    s_cam1.wtbMan = 0; // 3200
+    dnotify(UPD_IMMEDIATE);
 }
 
 void
 MainFrameD::wtb5600Selected(wxCommandEvent& event)
 {
-  doEnablesForWtb();
-  s_cam1.wtb = 2; // manual
-  s_cam1.wtbMan = 1; // 5600
-  dnotify(UPD_IMMEDIATE);
+//wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtb5600Btn->GetValue(),m_wtb5600Btn->IsEnabled());
+    doEnablesForWtb();
+    s_cam1.wtb = 2; // manual
+    s_cam1.wtbMan = 1; // 5600
+    dnotify(UPD_IMMEDIATE);
 }
 
 void
@@ -2453,24 +2474,9 @@ MainFrameD::svClicked(wxCommandEvent& event)
 }
 
 void
-MainFrameD::xhClicked(wxCommandEvent& event)
-{
-  wxLogDebug("%s", __FUNCTION__);
-  bool on = m_toolBar->GetToolState(ID_CROSS_HAIRS);
-  if (on) {
-    m_toolBar->ToggleTool(ID_CROSS_BOX, false);
-  }
-  s_cam1.mask = on ? 1 : 0;
-  dnotify(UPD_IMMEDIATE);
-}
-
-void
 MainFrameD::xbClicked(wxCommandEvent& event)
 {
   bool on = m_toolBar->GetToolState(ID_CROSS_BOX);
-  if (on) {
-    m_toolBar->ToggleTool(ID_CROSS_HAIRS, false);
-  }
   s_cam1.mask = on ? 2 : 0;
   dnotify(UPD_IMMEDIATE);
 }
@@ -2539,24 +2545,28 @@ MainFrameD::statusBarLeftUp(wxMouseEvent& event)
 void
 MainFrameD::OnTimer(wxTimerEvent& event)
 {
-  switch (event.GetId()) {
-  case ID_DEFERRED_EVT_TIMER:
-    _dnotify();
-    break;
-  case ID_FSM_TIMER:
-    wxLogDebug("fsm timeout");
-    s_fsm_timeout = true;
-    _do_camera_fsm();
-    break;
-  case ID_INT_TIMER:
-    s_int_timer_expired = true;
-    _do_camera_fsm();
-    break;
-  case ID_AGC_TIMER:
-    s_agc_timer_expired = true;
-    _do_camera_fsm();
-    break;
-  }
+    switch (event.GetId()) {
+    case ID_DEFERRED_EVT_TIMER:
+        _dnotify();
+        break;
+    case ID_FSM_TIMER:
+        wxLogDebug("fsm timeout");
+        s_fsm_timeout = true;
+        _do_camera_fsm();
+        break;
+    case ID_CMD_DELAY_TIMER:
+        s_cmd_delay_expired = true;
+        _do_camera_fsm();
+        break;
+    case ID_INT_TIMER:
+        s_int_timer_expired = true;
+        _do_camera_fsm();
+        break;
+    case ID_AGC_TIMER:
+        s_agc_timer_expired = true;
+        _do_camera_fsm();
+        break;
+    }
 }
 
 void
@@ -2572,24 +2582,27 @@ MainFrameD::OnMcxMsg(McxMsgEvent& event)
         s_reader_connected = false;
         break;
     case RDR_MSG:
-{
- const char *s;
- switch (event.evt_msg.stx) {
- case ACK: s = "ACK"; break;
- case STX: s = "response/ok"; break;
- case NAK: s = "response/NAK"; break;
- case EOT: s = "response/EOT"; break;
- default: s = "???"; break;
- }
- wxLogDebug("got %s", s);
-}
         // todo: handle NAK and EOT
-        if (event.evt_msg.stx == ACK)
+	switch (event.evt_msg.stx) {
+        case ACK:
+            wxLogDebug("recvd ACK");
             s_fsm_got_ack = true;
-        else {
+            break;
+        case STX:
             wxLogDebug("recvd: [%s]", _readable(event.evt_msg));
             s_fsm_response = event.evt_msg;
             s_fsm_got_response = true;
+// todo: validate cksum
+            break;
+        case NAK:
+            wxLogDebug("recvd NAK");
+            break;
+        case EOT:
+            wxLogDebug("recvd EOT");
+            break;
+        default:
+            wxLogDebug("recvd [%x]", event.evt_msg.stx);
+            break;
         }
         break;
     }
@@ -2641,7 +2654,6 @@ MainFrameD::EnableControls(EnableType how)
   m_toolBar->EnableTool(ID_LUNAR, enable);
   m_toolBar->EnableTool(ID_LOAD, enable);
   m_toolBar->EnableTool(ID_SAVE, enable);
-  m_toolBar->EnableTool(ID_CROSS_HAIRS, enable);
   m_toolBar->EnableTool(ID_CROSS_BOX, enable);
   m_toolBar->EnableTool(ID_COLOR_BARS, enable);
   m_toolBar->EnableTool(ID_H_REV, enable);

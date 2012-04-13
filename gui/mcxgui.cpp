@@ -15,7 +15,6 @@
 #include "PL.xpm"
 #include "Sv.xpm"
 #include "XB.xpm"
-#include "XH.xpm"
 #include "cc.xpm"
 #include "ng.xpm"
 #include "rH.xpm"
@@ -27,8 +26,57 @@
 MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+	this->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_APPWORKSPACE ) );
 	
-	m_statusBar = this->CreateStatusBar( 1, wxST_SIZEGRIP, wxID_ANY );
+	wxBoxSizer* bSizer25;
+	bSizer25 = new wxBoxSizer( wxVERTICAL );
+	
+	m_toolBar = new wxToolBar( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTB_HORIZONTAL|wxSIMPLE_BORDER ); 
+	m_toolBar->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ) );
+	
+	m_toolBar->AddTool( ID_DSO, wxT("tool"), wxBitmap( DS_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load DSO presets"), wxT("Load DSO presets"), NULL ); 
+	
+	m_toolBar->AddTool( ID_PLANET, wxT("tool"), wxBitmap( PL_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load planetary presets"), wxT("Load planetary presets"), NULL ); 
+	
+	m_toolBar->AddTool( ID_LUNAR, wxT("tool"), wxBitmap( LU_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load Lunar presets"), wxT("Load Lunar presets"), NULL ); 
+	
+	m_toolBar->AddTool( ID_LOAD, wxT("tool"), wxBitmap( Ld_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load presets"), wxT("Load presets"), NULL ); 
+	
+	m_toolBar->AddTool( ID_SAVE, wxT("tool"), wxBitmap( Sv_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Save presets"), wxT("Save presets"), NULL ); 
+	
+	m_toolBar->AddSeparator(); 
+	
+	m_toolBar->AddTool( ID_CROSS_BOX, wxT("tool"), wxBitmap( XB_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("Cross box"), wxT("Cross box"), NULL ); 
+	
+	m_toolBar->AddTool( ID_COLOR_BARS, wxT("tool"), wxBitmap( CB_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("Color bars"), wxT("Color bars"), NULL ); 
+	
+	m_toolBar->AddSeparator(); 
+	
+	m_toolBar->AddTool( ID_H_REV, wxT("tool"), wxBitmap( rH_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("Flip horizontal"), wxT("Flip horizontal"), NULL ); 
+	
+	m_toolBar->AddTool( ID_V_REV, wxT("tool"), wxBitmap( rV_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("Flip vertical"), wxT("Flip vertical"), NULL ); 
+	
+	m_toolBar->AddTool( ID_NEGATIVE, wxT("tool"), wxBitmap( ng_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("Negative image"), wxT("Negative image"), NULL ); 
+	
+	m_toolBar->AddSeparator(); 
+	
+	m_toolBar->AddTool( ID_FREEZE, wxT("tool"), wxBitmap( Fz_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("Freeze frame"), wxT("Freeze frame"), NULL ); 
+	
+	m_toolBar->AddSeparator(); 
+	
+	m_toolBar->AddTool( ID_CCD_MODE, wxT("tool"), wxBitmap( cc_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("CCD Mode"), wxT("CCD Mode"), NULL ); 
+	
+	m_toolBar->AddSeparator(); 
+	
+	m_toolBar->AddTool( ID_SLEEP, wxT("tool"), wxBitmap( zzz_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Shutdown camera"), wxT("Shutdown camera"), NULL ); 
+	
+	m_toolBar->Realize(); 
+	
+	bSizer25->Add( m_toolBar, 0, wxEXPAND, 5 );
+	
+	
+	bSizer25->Add( 0, 10, 0, 0, 5 );
+	
 	wxGridBagSizer* gbSizer2;
 	gbSizer2 = new wxGridBagSizer( 0, 0 );
 	gbSizer2->SetFlexibleDirection( wxBOTH );
@@ -106,6 +154,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	m_int->Append( wxT("28") );
 	m_int->Append( wxT("56") );
 	m_int->SetSelection( 0 );
+	m_int->SetForegroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOWTEXT ) );
+	m_int->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ) );
 	m_int->Enable( false );
 	m_int->SetMinSize( wxSize( 70,-1 ) );
 	
@@ -451,11 +501,11 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	m_port->SetSelection( 0 );
 	prioritySizer->Add( m_port, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	wxBoxSizer* bSizer25;
-	bSizer25 = new wxBoxSizer( wxVERTICAL );
+	wxBoxSizer* bSizer251;
+	bSizer251 = new wxBoxSizer( wxVERTICAL );
 	
 	
-	prioritySizer->Add( bSizer25, 1, wxEXPAND, 5 );
+	prioritySizer->Add( bSizer251, 1, wxEXPAND, 5 );
 	
 	wxString m_priorityChoices[] = { wxT("AGC"), wxT("Sense") };
 	int m_priorityNChoices = sizeof( m_priorityChoices ) / sizeof( wxString );
@@ -486,6 +536,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	m_titleTL = new wxRadioButton( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxRB_GROUP );
 	m_titleTL->SetValue( true ); 
+	m_titleTL->SetMinSize( wxSize( 20,-1 ) );
+	
 	gSizer2->Add( m_titleTL, 0, wxALL, 5 );
 	
 	m_titleTR = new wxRadioButton( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
@@ -513,6 +565,10 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	bSizer7 = new wxBoxSizer( wxHORIZONTAL );
 	
 	m_title = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	m_title->SetFont( wxFont( 8, 74, 90, 90, false, wxT("Tahoma") ) );
+	m_title->SetForegroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOWTEXT ) );
+	m_title->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ) );
+	
 	bSizer7->Add( m_title, 1, wxALL, 5 );
 	
 	
@@ -525,57 +581,33 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	gbSizer2->Add( titleGroupSizer, wxGBPosition( 0, 2 ), wxGBSpan( 2, 1 ), wxEXPAND, 5 );
 	
 	
-	this->SetSizer( gbSizer2 );
+	bSizer25->Add( gbSizer2, 1, wxEXPAND, 5 );
+	
+	
+	bSizer25->Add( 0, 30, 0, wxFIXED_MINSIZE, 5 );
+	
+	
+	this->SetSizer( bSizer25 );
 	this->Layout();
-	gbSizer2->Fit( this );
-	m_toolBar = this->CreateToolBar( wxTB_HORIZONTAL, wxID_ANY ); 
-	m_toolBar->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_MENU ) );
-	
-	m_toolBar->AddTool( ID_DSO, wxT("tool"), wxBitmap( DS_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load DSO presets"), wxT("Load DSO presets"), NULL ); 
-	
-	m_toolBar->AddTool( ID_PLANET, wxT("tool"), wxBitmap( PL_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load planetary presets"), wxT("Load planetary presets"), NULL ); 
-	
-	m_toolBar->AddTool( ID_LUNAR, wxT("tool"), wxBitmap( LU_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load Lunar presets"), wxT("Load Lunar presets"), NULL ); 
-	
-	m_toolBar->AddTool( ID_LOAD, wxT("tool"), wxBitmap( Ld_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load presets"), wxT("Load presets"), NULL ); 
-	
-	m_toolBar->AddTool( ID_SAVE, wxT("tool"), wxBitmap( Sv_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Save presets"), wxT("Save presets"), NULL ); 
-	
-	m_toolBar->AddSeparator(); 
-	
-	m_toolBar->AddTool( ID_CROSS_HAIRS, wxT("tool"), wxBitmap( XH_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("Cross hairs"), wxT("Cross hairs"), NULL ); 
-	
-	m_toolBar->AddTool( ID_CROSS_BOX, wxT("tool"), wxBitmap( XB_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("Cross box"), wxT("Cross box"), NULL ); 
-	
-	m_toolBar->AddTool( ID_COLOR_BARS, wxT("tool"), wxBitmap( CB_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("Color bars"), wxT("Color bars"), NULL ); 
-	
-	m_toolBar->AddSeparator(); 
-	
-	m_toolBar->AddTool( ID_H_REV, wxT("tool"), wxBitmap( rH_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("Flip horizontal"), wxT("Flip horizontal"), NULL ); 
-	
-	m_toolBar->AddTool( ID_V_REV, wxT("tool"), wxBitmap( rV_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("Flip vertical"), wxT("Flip vertical"), NULL ); 
-	
-	m_toolBar->AddTool( ID_NEGATIVE, wxT("tool"), wxBitmap( ng_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("Negative image"), wxT("Negative image"), NULL ); 
-	
-	m_toolBar->AddSeparator(); 
-	
-	m_toolBar->AddTool( ID_FREEZE, wxT("tool"), wxBitmap( Fz_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("Freeze frame"), wxT("Freeze frame"), NULL ); 
-	
-	m_toolBar->AddSeparator(); 
-	
-	m_toolBar->AddTool( ID_CCD_MODE, wxT("tool"), wxBitmap( cc_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("CCD Mode"), wxT("CCD Mode"), NULL ); 
-	
-	m_toolBar->AddSeparator(); 
-	
-	m_toolBar->AddTool( ID_SLEEP, wxT("tool"), wxBitmap( zzz_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Shutdown camera"), wxT("Shutdown camera"), NULL ); 
-	
-	m_toolBar->Realize(); 
-	
+	bSizer25->Fit( this );
+	m_statusBar = this->CreateStatusBar( 1, wxST_SIZEGRIP, wxID_ANY );
 	
 	this->Centre( wxBOTH );
 	
 	// Connect Events
-	m_statusBar->Connect( wxEVT_LEFT_UP, wxMouseEventHandler( MainFrame::statusBarLeftUp ), NULL, this );
+	this->Connect( ID_DSO, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::dsClicked ) );
+	this->Connect( ID_PLANET, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::plClicked ) );
+	this->Connect( ID_LUNAR, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::luClicked ) );
+	this->Connect( ID_LOAD, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ldClicked ) );
+	this->Connect( ID_SAVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::svClicked ) );
+	this->Connect( ID_CROSS_BOX, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::xbClicked ) );
+	this->Connect( ID_COLOR_BARS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::cbClicked ) );
+	this->Connect( ID_H_REV, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::rhClicked ) );
+	this->Connect( ID_V_REV, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::rvClicked ) );
+	this->Connect( ID_NEGATIVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ngClicked ) );
+	this->Connect( ID_FREEZE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::fzClicked ) );
+	this->Connect( ID_CCD_MODE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ccClicked ) );
+	this->Connect( ID_SLEEP, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::sleepClicked ) );
 	m_senseUp->Connect( wxEVT_SCROLL_TOP, wxScrollEventHandler( MainFrame::senseUpScroll ), NULL, this );
 	m_senseUp->Connect( wxEVT_SCROLL_BOTTOM, wxScrollEventHandler( MainFrame::senseUpScroll ), NULL, this );
 	m_senseUp->Connect( wxEVT_SCROLL_LINEUP, wxScrollEventHandler( MainFrame::senseUpScroll ), NULL, this );
@@ -713,26 +745,25 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	m_coronagraph->Connect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( MainFrame::coronagraphScroll ), NULL, this );
 	m_port->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( MainFrame::portChoice ), NULL, this );
 	m_title->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( MainFrame::titleText ), NULL, this );
-	this->Connect( ID_DSO, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::dsClicked ) );
-	this->Connect( ID_PLANET, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::plClicked ) );
-	this->Connect( ID_LUNAR, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::luClicked ) );
-	this->Connect( ID_LOAD, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ldClicked ) );
-	this->Connect( ID_SAVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::svClicked ) );
-	this->Connect( ID_CROSS_HAIRS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::xhClicked ) );
-	this->Connect( ID_CROSS_BOX, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::xbClicked ) );
-	this->Connect( ID_COLOR_BARS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::cbClicked ) );
-	this->Connect( ID_H_REV, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::rhClicked ) );
-	this->Connect( ID_V_REV, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::rvClicked ) );
-	this->Connect( ID_NEGATIVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ngClicked ) );
-	this->Connect( ID_FREEZE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::fzClicked ) );
-	this->Connect( ID_CCD_MODE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ccClicked ) );
-	this->Connect( ID_SLEEP, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::sleepClicked ) );
+	m_statusBar->Connect( wxEVT_LEFT_UP, wxMouseEventHandler( MainFrame::statusBarLeftUp ), NULL, this );
 }
 
 MainFrame::~MainFrame()
 {
 	// Disconnect Events
-	m_statusBar->Disconnect( wxEVT_LEFT_UP, wxMouseEventHandler( MainFrame::statusBarLeftUp ), NULL, this );
+	this->Disconnect( ID_DSO, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::dsClicked ) );
+	this->Disconnect( ID_PLANET, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::plClicked ) );
+	this->Disconnect( ID_LUNAR, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::luClicked ) );
+	this->Disconnect( ID_LOAD, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ldClicked ) );
+	this->Disconnect( ID_SAVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::svClicked ) );
+	this->Disconnect( ID_CROSS_BOX, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::xbClicked ) );
+	this->Disconnect( ID_COLOR_BARS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::cbClicked ) );
+	this->Disconnect( ID_H_REV, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::rhClicked ) );
+	this->Disconnect( ID_V_REV, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::rvClicked ) );
+	this->Disconnect( ID_NEGATIVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ngClicked ) );
+	this->Disconnect( ID_FREEZE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::fzClicked ) );
+	this->Disconnect( ID_CCD_MODE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ccClicked ) );
+	this->Disconnect( ID_SLEEP, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::sleepClicked ) );
 	m_senseUp->Disconnect( wxEVT_SCROLL_TOP, wxScrollEventHandler( MainFrame::senseUpScroll ), NULL, this );
 	m_senseUp->Disconnect( wxEVT_SCROLL_BOTTOM, wxScrollEventHandler( MainFrame::senseUpScroll ), NULL, this );
 	m_senseUp->Disconnect( wxEVT_SCROLL_LINEUP, wxScrollEventHandler( MainFrame::senseUpScroll ), NULL, this );
@@ -870,19 +901,6 @@ MainFrame::~MainFrame()
 	m_coronagraph->Disconnect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( MainFrame::coronagraphScroll ), NULL, this );
 	m_port->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( MainFrame::portChoice ), NULL, this );
 	m_title->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( MainFrame::titleText ), NULL, this );
-	this->Disconnect( ID_DSO, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::dsClicked ) );
-	this->Disconnect( ID_PLANET, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::plClicked ) );
-	this->Disconnect( ID_LUNAR, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::luClicked ) );
-	this->Disconnect( ID_LOAD, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ldClicked ) );
-	this->Disconnect( ID_SAVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::svClicked ) );
-	this->Disconnect( ID_CROSS_HAIRS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::xhClicked ) );
-	this->Disconnect( ID_CROSS_BOX, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::xbClicked ) );
-	this->Disconnect( ID_COLOR_BARS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::cbClicked ) );
-	this->Disconnect( ID_H_REV, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::rhClicked ) );
-	this->Disconnect( ID_V_REV, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::rvClicked ) );
-	this->Disconnect( ID_NEGATIVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ngClicked ) );
-	this->Disconnect( ID_FREEZE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::fzClicked ) );
-	this->Disconnect( ID_CCD_MODE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ccClicked ) );
-	this->Disconnect( ID_SLEEP, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::sleepClicked ) );
+	m_statusBar->Disconnect( wxEVT_LEFT_UP, wxMouseEventHandler( MainFrame::statusBarLeftUp ), NULL, this );
 	
 }

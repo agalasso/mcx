@@ -440,7 +440,7 @@ mcxcomm_recv(msg *msg, unsigned int timeout_ms, bool *err)
 if (*err) wxLogDebug("%s fail reading 1 byte",__FUNCTION__);
         return false;
     }
-wxLogDebug("recv 0x%x",msg->stx);
+//wxLogDebug("recv 0x%x",msg->stx);
 
     if (msg->stx == STX) {
         if (!_read_n(&msg->cmdrsp, sizeof(*msg) - 1, timer, timeout_ms, err))

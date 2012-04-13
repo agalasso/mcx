@@ -10,9 +10,12 @@
 
 #include <wx/artprov.h>
 #include <wx/xrc/xmlres.h>
-#include <wx/statusbr.h>
 #include <wx/string.h>
+#include <wx/bitmap.h>
+#include <wx/image.h>
+#include <wx/icon.h>
 #include <wx/gdicmn.h>
+#include <wx/toolbar.h>
 #include <wx/font.h>
 #include <wx/colour.h>
 #include <wx/settings.h>
@@ -27,10 +30,7 @@
 #include <wx/radiobox.h>
 #include <wx/textctrl.h>
 #include <wx/gbsizer.h>
-#include <wx/bitmap.h>
-#include <wx/image.h>
-#include <wx/icon.h>
-#include <wx/toolbar.h>
+#include <wx/statusbr.h>
 #include <wx/frame.h>
 
 ///////////////////////////////////////////////////////////////////////////
@@ -50,7 +50,6 @@ class MainFrame : public wxFrame
 			ID_LUNAR,
 			ID_LOAD,
 			ID_SAVE,
-			ID_CROSS_HAIRS,
 			ID_CROSS_BOX,
 			ID_COLOR_BARS,
 			ID_H_REV,
@@ -61,6 +60,7 @@ class MainFrame : public wxFrame
 			ID_SLEEP
 		};
 		
+		wxToolBar* m_toolBar;
 		wxStaticText* m_staticText1;
 		wxSlider* m_senseUp;
 		wxStaticText* m_senseUpVal;
@@ -116,10 +116,21 @@ class MainFrame : public wxFrame
 		wxRadioButton* m_titleBL;
 		wxRadioButton* m_titleBR;
 		wxTextCtrl* m_title;
-		wxToolBar* m_toolBar;
 		
 		// Virtual event handlers, overide them in your derived class
-		virtual void statusBarLeftUp( wxMouseEvent& event ) { event.Skip(); }
+		virtual void dsClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void plClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void luClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void ldClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void svClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void xbClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void cbClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void rhClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void rvClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void ngClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void fzClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void ccClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void sleepClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void senseUpScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void alcScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void elcScroll( wxScrollEvent& event ) { event.Skip(); }
@@ -145,30 +156,17 @@ class MainFrame : public wxFrame
 		virtual void coronagraphScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void portChoice( wxCommandEvent& event ) { event.Skip(); }
 		virtual void titleText( wxCommandEvent& event ) { event.Skip(); }
-		virtual void dsClicked( wxCommandEvent& event ) { event.Skip(); }
-		virtual void plClicked( wxCommandEvent& event ) { event.Skip(); }
-		virtual void luClicked( wxCommandEvent& event ) { event.Skip(); }
-		virtual void ldClicked( wxCommandEvent& event ) { event.Skip(); }
-		virtual void svClicked( wxCommandEvent& event ) { event.Skip(); }
-		virtual void xhClicked( wxCommandEvent& event ) { event.Skip(); }
-		virtual void xbClicked( wxCommandEvent& event ) { event.Skip(); }
-		virtual void cbClicked( wxCommandEvent& event ) { event.Skip(); }
-		virtual void rhClicked( wxCommandEvent& event ) { event.Skip(); }
-		virtual void rvClicked( wxCommandEvent& event ) { event.Skip(); }
-		virtual void ngClicked( wxCommandEvent& event ) { event.Skip(); }
-		virtual void fzClicked( wxCommandEvent& event ) { event.Skip(); }
-		virtual void ccClicked( wxCommandEvent& event ) { event.Skip(); }
-		virtual void sleepClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void statusBarLeftUp( wxMouseEvent& event ) { event.Skip(); }
 		
 	
 	public:
-		wxStatusBar* m_statusBar;
 		wxComboBox* m_int;
 		wxButton* m_intBtn;
 		wxSlider* m_agcMan;
 		wxChoice* m_port;
+		wxStatusBar* m_statusBar;
 		
-		MainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+		MainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Mallincam Control"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 		
 		~MainFrame();
 	
