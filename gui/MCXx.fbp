@@ -125,11 +125,11 @@
                 <property name="name">bSizer25</property>
                 <property name="orient">wxVERTICAL</property>
                 <property name="permission">none</property>
-                <object class="sizeritem" expanded="0">
+                <object class="sizeritem" expanded="1">
                     <property name="border">5</property>
                     <property name="flag">wxEXPAND</property>
                     <property name="proportion">0</property>
-                    <object class="wxToolBar" expanded="0">
+                    <object class="wxToolBar" expanded="1">
                         <property name="BottomDockable">1</property>
                         <property name="LeftDockable">1</property>
                         <property name="RightDockable">1</property>
@@ -275,6 +275,27 @@
                             <event name="OnToolRClicked"></event>
                             <event name="OnUpdateUI"></event>
                         </object>
+                        <object class="tool" expanded="1">
+                            <property name="bitmap">Load From Embedded File; C:\MinGW\msys\1.0\home\agalasso\proj\mcx\gui\solar.xpm</property>
+                            <property name="context_menu">0</property>
+                            <property name="id">ID_SOLAR</property>
+                            <property name="kind">wxITEM_NORMAL</property>
+                            <property name="label">tool</property>
+                            <property name="name">m_solar</property>
+                            <property name="permission">protected</property>
+                            <property name="statusbar">Load Solar presets</property>
+                            <property name="tooltip">Load Solar presets</property>
+                            <event name="OnAuiToolBarBeginDrag"></event>
+                            <event name="OnAuiToolBarMiddleClick"></event>
+                            <event name="OnAuiToolBarOverflowClick"></event>
+                            <event name="OnAuiToolBarRightClick"></event>
+                            <event name="OnAuiToolBarToolDropDown"></event>
+                            <event name="OnMenuSelection"></event>
+                            <event name="OnToolClicked">solarClicked</event>
+                            <event name="OnToolEnter"></event>
+                            <event name="OnToolRClicked"></event>
+                            <event name="OnUpdateUI"></event>
+                        </object>
                         <object class="tool" expanded="0">
                             <property name="bitmap">Load From Embedded File; Ld.xpm</property>
                             <property name="context_menu">0</property>
@@ -283,8 +304,8 @@
                             <property name="label">tool</property>
                             <property name="name">m_load</property>
                             <property name="permission">protected</property>
-                            <property name="statusbar">Load presets</property>
-                            <property name="tooltip">Load presets</property>
+                            <property name="statusbar">Load custom presets</property>
+                            <property name="tooltip">Load custom presets</property>
                             <event name="OnAuiToolBarBeginDrag"></event>
                             <event name="OnAuiToolBarMiddleClick"></event>
                             <event name="OnAuiToolBarOverflowClick"></event>
@@ -671,7 +692,7 @@
                                         <property name="pane_border">1</property>
                                         <property name="pane_position"></property>
                                         <property name="pane_size"></property>
-                                        <property name="permission">protected</property>
+                                        <property name="permission">public</property>
                                         <property name="pin_button">1</property>
                                         <property name="pos"></property>
                                         <property name="resize">Resizable</property>

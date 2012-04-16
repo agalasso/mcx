@@ -19,6 +19,7 @@
 #include "ng.xpm"
 #include "rH.xpm"
 #include "rV.xpm"
+#include "solar.xpm"
 #include "zzz.xpm"
 
 ///////////////////////////////////////////////////////////////////////////
@@ -40,7 +41,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	m_toolBar->AddTool( ID_LUNAR, wxT("tool"), wxBitmap( LU_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load Lunar presets"), wxT("Load Lunar presets"), NULL ); 
 	
-	m_toolBar->AddTool( ID_LOAD, wxT("tool"), wxBitmap( Ld_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load presets"), wxT("Load presets"), NULL ); 
+	m_toolBar->AddTool( ID_SOLAR, wxT("tool"), wxBitmap( solar_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load Solar presets"), wxT("Load Solar presets"), NULL ); 
+	
+	m_toolBar->AddTool( ID_LOAD, wxT("tool"), wxBitmap( Ld_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load custom presets"), wxT("Load custom presets"), NULL ); 
 	
 	m_toolBar->AddTool( ID_SAVE, wxT("tool"), wxBitmap( Sv_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Save presets"), wxT("Save presets"), NULL ); 
 	
@@ -598,6 +601,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	this->Connect( ID_DSO, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::dsClicked ) );
 	this->Connect( ID_PLANET, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::plClicked ) );
 	this->Connect( ID_LUNAR, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::luClicked ) );
+	this->Connect( ID_SOLAR, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::solarClicked ) );
 	this->Connect( ID_LOAD, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ldClicked ) );
 	this->Connect( ID_SAVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::svClicked ) );
 	this->Connect( ID_CROSS_BOX, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::xbClicked ) );
@@ -754,6 +758,7 @@ MainFrame::~MainFrame()
 	this->Disconnect( ID_DSO, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::dsClicked ) );
 	this->Disconnect( ID_PLANET, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::plClicked ) );
 	this->Disconnect( ID_LUNAR, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::luClicked ) );
+	this->Disconnect( ID_SOLAR, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::solarClicked ) );
 	this->Disconnect( ID_LOAD, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ldClicked ) );
 	this->Disconnect( ID_SAVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::svClicked ) );
 	this->Disconnect( ID_CROSS_BOX, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::xbClicked ) );

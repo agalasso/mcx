@@ -47,6 +47,11 @@ mcxcomm_connect(const char *filename)
   return true;
 }
 
+void
+mcxcomm_disconnect()
+{
+}
+
 bool
 mcxcomm_send_enq()
 {
@@ -75,12 +80,12 @@ mcxcomm_send_msg(const msg& cmd)
 }
 
 bool
-mcxcomm_recv(msg *msg, unsigned int timeout_ms)
+mcxcomm_recv(msg *msg, unsigned int timeout_ms, bool *err)
 {
-  bool ok = _get(msg);
-  if (ok)
-    return ok;
-  wxMilliSleep(timeout_ms / 2);
-  return _get(msg);
+    *err = false;
+    bool ok = _get(msg);
+    if (ok)
+        return ok;
+    wxMilliSleep(timeout_ms / 2);
+    return _get(msg);
 }
-

@@ -1,29 +1,40 @@
-// TODO:
-//  disable/enable radio btns is sensing selected events and sending camera commands
-//  int not writeble?
-// TODO: disable controls disable labels to make more obvious?
-// TODO: top button functions
-//     load/save/presets
-//     ccd mode
-//     sleep camera
-// TODO: config window (comm port, anything else?)
-// TODO: app icon and window title
-// TODO: resend mcx message if not acked?
-// TODO: accept varios integration time formats  2m 2:30 2.5m
-// TODO: fix window height
-// title pos buttons
-// send empty title (not just turn off); or, send new title before title on
-// TODO:save full mask, not just mask type
-// TODO: get rid of cross hairs
-// TODO: toggle cross bars selected when read cam settings and find mask enabled
+// TODO
+//   agc timer for 128x
+//   force fixed statings at startup:
+//      full tec area
+//      masks
+//   resolve COMMAND_DELAY_MS vs INT_CAPTURE_DELAY_MS
+//   tec on send full area
+//   blc
+//   disable controls disable labels to make more obvious?
+//   top button functions:
+//       load/save/presets
+//       ccd mode
+//       sleep camera
+//   rock re ALC/ELV and sensup mutually exclusive?
+//   config window (comm port, anything else?)
+//   app icon and window title TopLevelWindow->SetIcon
+//   resend mcx message if not acked?
+//   accept varios integration time formats  2m 2:30 2.5m
+//   fix window height
+//   title pos buttons
+//   send empty title (not just turn off); or, send new title before title on
+//   save full mask, not just mask type
+//   get rid of cross hairs
+//   toggle cross bars selected when read cam settings and find mask enabled
 //
-// TODO: camera comm for windows
-// TODO: fix toolbar background
-// TODO: git
-// TODO: 3 minute agc change timer, + how to cancel it?
-// TODO: integration fsm
-// crash when integrating hit exit
-// TODO: staus messages for reading camera state, maybe even a progress bar
+// done:
+//  button for solar
+//  sensup >0 => force alc/elc off
+//  disable/enable radio btns is sensing selected events and sending camera commands - not a problem
+//  int not writeble? - ok, if call Skip
+//  camera comm for windows
+//  fix toolbar background
+//  git
+//  3 minute agc change timer, + how to cancel it?
+//  integration fsm
+//  crash when integrating hit exit
+//  staus messages for reading camera state, maybe even a progress bar
 //    general status
 //         connecting, sending, integrating
 
@@ -36,6 +47,7 @@
 
 #include "mcxgui.h"
 #include "mcxcomm.h"
+#include "mcx.xpm"
 
 #include <map>
 
@@ -82,7 +94,8 @@ enum {
 
   ACK_TIMEOUT_MS = 1000,
   RESPONSE_TIMEOUT_MS = 5000,
-  COMMAND_DELAY_MS = 200,
+  COMMAND_DELAY_MS = 175,
+  INT_CAPTURE_DELAY_MS = 175,
 
   AGC_WAIT_MS = 3 * 60 * 1000, // how long to wait after agc change
 };
@@ -886,6 +899,7 @@ public:
     void dsClicked(wxCommandEvent& event);
     void plClicked(wxCommandEvent& event);
     void luClicked(wxCommandEvent& event);
+    void solarClicked(wxCommandEvent& event);
     void ldClicked(wxCommandEvent& event);
     void svClicked(wxCommandEvent& event);
     void xbClicked(wxCommandEvent& event);
@@ -1449,10 +1463,10 @@ _int_init2(bool *done)
 {
   // wait for queued commands to drain
 
-  if (!_camera_cmds_in_flight())
-    s_int_state = INT_INT1;
-  else
-    *done = true;
+    if (!_camera_cmds_in_flight())
+        s_int_state = INT_INT1;
+    else
+        *done = true;
 }
 
 static void
@@ -1526,7 +1540,7 @@ _int_capture1(bool *done)
       s_int_state = INT_STOP;
     else {
       s_int_timer_expired = false;
-      s_int_timer->Start(175, wxTIMER_ONE_SHOT);
+      s_int_timer->Start(INT_CAPTURE_DELAY_MS, wxTIMER_ONE_SHOT);
       s_int_state = INT_CAPTURE2;
       *done = true;
     }
@@ -1540,14 +1554,10 @@ _int_capture2(bool *done)
 {
   // wait for trigger timer
 
-  //  wxLogDebug("INT_FSM %s", __FUNCTION__);
-
   if (s_int_timer_expired)
     s_int_state = INT_INT1;
   else
     *done = true;
-
-  // todo: handle stop button clicked?
 }
 
 static void
@@ -1583,27 +1593,44 @@ _do_int_fsm()
   } while (!done);
 }
 
+#define SENSEUP_128X 12
+
+static u8
+_senseup_val(int scroll_val)
+{
+    u8 const val[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, SENSEUP_128X };
+    wxASSERT(scroll_val >= 0 && scroll_val < lengthof(val));
+    return val[scroll_val];
+}
+
 static bool
 _send_agc()
 {
-  int const p = _win()->m_agcMan->GetValue();
-  int const val[] = { -1, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-  if (p == 0) {
-    s_cam1.agc = 0; // off
-  }
-  else {
-    s_cam1.agc = 2; // manual
-    s_cam1.agcManual = val[p];
-  }
-  bool changed =
-    s_cam1.agc != s_cam0.agc ||
-    s_cam1.agcManual != s_cam0.agcManual;
+    MainFrameD *const win = _win();
 
-  // todo: does agc auto change require similar treatment?
+    int const p = win->m_agcMan->GetValue();
+    int const val[] = { -1, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+    if (p == 0) {
+        s_cam1.agc = 0; // off
+    }
+    else {
+        s_cam1.agc = 2; // manual
+        s_cam1.agcManual = val[p];
+    }
+    bool changed =
+        s_cam1.agc != s_cam0.agc ||
+        s_cam1.agcManual != s_cam0.agcManual;
 
-  dnotify(UPD_IMMEDIATE);
+    int const suval = _senseup_val(win->m_senseUp->GetValue());
+    s_cam1.senseUp = suval;
+    if (suval == SENSEUP_128X && s_cam1.senseUp != s_cam0.senseUp)
+        changed = true;
 
-  return changed;
+    // todo: does agc auto change require similar treatment?
+
+    dnotify(UPD_IMMEDIATE);
+
+    return changed;
 }
 
 static void
@@ -1624,58 +1651,58 @@ _update_agc_status(long elapsed)
 static void
 _agc_wait_init(bool *done)
 {
-  s_agc_timer_expired = false;
-  s_agc_timer->Start(4000, wxTIMER_ONE_SHOT);
-  s_agc_wait_state = AGC_WAIT1;
-  *done = true;
+    s_agc_timer_expired = false;
+    s_agc_timer->Start(4000, wxTIMER_ONE_SHOT);
+    s_agc_wait_state = AGC_WAIT1;
+    *done = true;
 }
 
 static void
 _agc_wait1(bool *done)
 {
-  if (s_agc_timer_expired)
-    if (_camera_cmds_in_flight())
-      *done = true; // go back and wait
-    else {
-      bool changed = _send_agc();
-      if (changed) {
-	_enable_controls(EN_DISABLE);
-	_update_agc_status(0);
-	s_agc_wait_cancel_clicked = false;
-	s_agc_stopwatch->Start();
-	s_agc_timer->Start(500, wxTIMER_CONTINUOUS);
-	s_agc_wait_state = AGC_WAIT2;
-	*done = true;
-      }
-      else
-	s_agc_wait_state = AGC_STABLE;
-    }
-  else
-    *done = true;
+    if (s_agc_timer_expired)
+        if (_camera_cmds_in_flight())
+            *done = true; // go back and wait
+        else {
+            bool changed = _send_agc();
+            if (changed) {
+                _enable_controls(EN_DISABLE);
+                _update_agc_status(0);
+                s_agc_wait_cancel_clicked = false;
+                s_agc_stopwatch->Start();
+                s_agc_timer->Start(500, wxTIMER_CONTINUOUS);
+                s_agc_wait_state = AGC_WAIT2;
+                *done = true;
+            }
+            else
+                s_agc_wait_state = AGC_STABLE;
+        }
+    else
+        *done = true;
 }
 
 static void
 _agc_wait2(bool *done)
 {
-  if (s_agc_wait_cancel_clicked)
-    s_agc_wait_state = AGC_CLEANUP;
-  else {
-    long elapsed = s_agc_stopwatch->Time();
-    _update_agc_status(elapsed);
-    if (elapsed >= AGC_WAIT_MS)
-      s_agc_wait_state = AGC_CLEANUP;
-    else
-      *done = true;
-  }
+    if (s_agc_wait_cancel_clicked)
+        s_agc_wait_state = AGC_CLEANUP;
+    else {
+        long elapsed = s_agc_stopwatch->Time();
+        _update_agc_status(elapsed);
+        if (elapsed >= AGC_WAIT_MS)
+            s_agc_wait_state = AGC_CLEANUP;
+        else
+            *done = true;
+    }
 }
 
 static void
 _agc_cleanup(bool *done)
 {
-  s_agc_timer->Stop();
-  _enable_controls(EN_ENABLE_ALL);
-  _update_agc_status(-1);
-  s_agc_wait_state = AGC_STABLE;
+    s_agc_timer->Stop();
+    _enable_controls(EN_ENABLE_ALL);
+    _update_agc_status(-1);
+    s_agc_wait_state = AGC_STABLE;
 }
 
 static void
@@ -1816,23 +1843,29 @@ MainFrameD::senseUpUpdated()
 void
 MainFrameD::senseUpScroll(wxScrollEvent&)
 {
-  senseUpUpdated();
-  int const val[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
-  int const p = m_senseUp->GetValue();
-  wxASSERT(p >= 0 && p < lengthof(val));
+    senseUpUpdated();
 
-  if (p > 0) {
-    wxScrollEvent ev(wxEVT_SCROLL_TOP);
-    // set ALC off
-    m_alc->SetValue(0);
-    m_alc->GetEventHandler()->ProcessEvent(ev);
-    // set ELC off
-    m_elc->SetValue(0);
-    m_elc->GetEventHandler()->ProcessEvent(ev);
-  }
+    u8 const val = _senseup_val(m_senseUp->GetValue());
 
-  s_cam1.senseUp = val[p];
-  dnotify(UPD_DEFER);
+    if (val > 0) {
+        wxScrollEvent ev(wxEVT_SCROLL_TOP);
+        // set ALC off
+        m_alc->SetValue(0);
+        m_alc->GetEventHandler()->ProcessEvent(ev);
+        // set ELC off
+        m_elc->SetValue(0);
+        m_elc->GetEventHandler()->ProcessEvent(ev);
+    }
+
+    if (val < SENSEUP_128X) {
+        s_cam1.senseUp = val;
+        dnotify(UPD_DEFER);
+    }
+    else {
+        // senseUp 128x requires AGC timer wait
+        s_agc_wait_state = AGC_WAIT_INIT;
+        _do_camera_fsm();
+    }
 }
 
 void
@@ -1964,18 +1997,18 @@ MainFrameD::agcManUpdated()
 void
 MainFrameD::agcManScroll(wxScrollEvent& event)
 {
-  agcManUpdated();
+    agcManUpdated();
 
-  int const p = event.GetPosition();
-  if (p > 0) {
-    // set AGC Auto off
-    m_agcAuto->SetValue(0);
-    wxScrollEvent ev(wxEVT_SCROLL_TOP);
-    m_agcAuto->GetEventHandler()->ProcessEvent(ev);
-  }
+    int const p = event.GetPosition();
+    if (p > 0) {
+        // set AGC Auto off
+        m_agcAuto->SetValue(0);
+        wxScrollEvent ev(wxEVT_SCROLL_TOP);
+        m_agcAuto->GetEventHandler()->ProcessEvent(ev);
+    }
 
-  s_agc_wait_state = AGC_WAIT_INIT;
-  _do_camera_fsm();
+    s_agc_wait_state = AGC_WAIT_INIT;
+    _do_camera_fsm();
 }
 
 void
@@ -2460,6 +2493,13 @@ MainFrameD::luClicked(wxCommandEvent& event)
 }
 
 void
+MainFrameD::solarClicked(wxCommandEvent& event)
+{
+  wxLogDebug("%s", __FUNCTION__);
+  // todo
+}
+
+void
 MainFrameD::ldClicked(wxCommandEvent& event)
 {
   wxLogDebug("%s", __FUNCTION__);
@@ -2652,6 +2692,7 @@ MainFrameD::EnableControls(EnableType how)
   m_toolBar->EnableTool(ID_DSO, enable);
   m_toolBar->EnableTool(ID_PLANET, enable);
   m_toolBar->EnableTool(ID_LUNAR, enable);
+  m_toolBar->EnableTool(ID_SOLAR, enable);
   m_toolBar->EnableTool(ID_LOAD, enable);
   m_toolBar->EnableTool(ID_SAVE, enable);
   m_toolBar->EnableTool(ID_CROSS_BOX, enable);
@@ -2708,6 +2749,7 @@ McxApp::OnInit()
     mcxcomm_init();
 
     MainFrameD *frame = new MainFrameD(0);
+    frame->SetIcon(wxIcon(mcx_xpm));
 
     wxString port;
     wxConfig::Get()->Read("CommPort", &port, "COM1");

@@ -48,6 +48,7 @@ class MainFrame : public wxFrame
 			ID_DSO = 1000,
 			ID_PLANET,
 			ID_LUNAR,
+			ID_SOLAR,
 			ID_LOAD,
 			ID_SAVE,
 			ID_CROSS_BOX,
@@ -62,7 +63,6 @@ class MainFrame : public wxFrame
 		
 		wxToolBar* m_toolBar;
 		wxStaticText* m_staticText1;
-		wxSlider* m_senseUp;
 		wxStaticText* m_senseUpVal;
 		wxStaticText* m_staticText26;
 		wxSlider* m_alc;
@@ -121,6 +121,7 @@ class MainFrame : public wxFrame
 		virtual void dsClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void plClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void luClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void solarClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void ldClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void svClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void xbClicked( wxCommandEvent& event ) { event.Skip(); }
@@ -160,6 +161,7 @@ class MainFrame : public wxFrame
 		
 	
 	public:
+		wxSlider* m_senseUp;
 		wxComboBox* m_int;
 		wxButton* m_intBtn;
 		wxSlider* m_agcMan;
