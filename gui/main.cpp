@@ -1,8 +1,10 @@
 // TODO
-//   agc timer for 128x
+//   about box
+//   logging
 //   force fixed statings at startup:
 //      full tec area
 //      masks
+//      sync=int
 //   resolve COMMAND_DELAY_MS vs INT_CAPTURE_DELAY_MS
 //   tec on send full area
 //   blc
@@ -24,6 +26,7 @@
 //   toggle cross bars selected when read cam settings and find mask enabled
 //
 // done:
+//  agc timer for 128x
 //  button for solar
 //  sensup >0 => force alc/elc off
 //  disable/enable radio btns is sensing selected events and sending camera commands - not a problem
@@ -254,7 +257,11 @@ struct Camera
 
   u8 sync; // 0=int 1=line 2=vbs
 
-  u8 mask; // 0=off 1=cross-hairs 2=cross-bars
+  struct {
+    u8 on; // 0=off 1=on
+    u8 area[4]; // mask area
+  } mask[4];
+
   u8 neg; // 0=pos 1=neg
   u8 hRev; // 0=off 1=on
   u8 vRev; // 0=off 1=on
@@ -287,12 +294,268 @@ enum {
   SYNC_VBS = 2,
 };
 
+static const char *const FIRSTLINE = "[mcx camera settings v1]";
+
+static bool
+_save_cam(const char *filename, const Camera *cam)
+{
+    FILE *fp = fopen(filename, "w");
+    if (fp == 0)
+	return false;
+
+    fprintf(fp, "%s\n", FIRSTLINE);
+
+    fprintf(fp, "title = \"%s\"\n", cam->title.c_str().AsChar());
+
+#define F(name) fprintf(fp, #name " = %u\n", cam->name)
+
+    F(titlePos);
+    F(senseUp);
+    F(alcElc);
+    F(alc);
+    F(elc);
+
+    F(blc);
+    F(blcPreset);
+
+    fprintf(fp, "blcArea = %u %u %u %u %u %u\n",
+	    cam->blcArea[0],
+	    cam->blcArea[1],
+	    cam->blcArea[2],
+	    cam->blcArea[3],
+	    cam->blcArea[4],
+	    cam->blcArea[5]);
+
+    F(blcPeak);
+
+    F(agc);
+    F(agcLevel);
+    F(agcManual);
+
+    F(wtb);
+    F(wtbMan);
+    F(wtbRed);
+    F(wtbBlue);
+
+    F(sync);
+
+    for (unsigned int m = 0; m < 4; m++)
+	fprintf(fp, "mask.%u = %u %u %u %u %u\n", m, cam->mask[m].on,
+		cam->mask[m].area[0],
+		cam->mask[m].area[1],
+		cam->mask[m].area[2],
+		cam->mask[m].area[3]);
+
+    F(neg);
+    F(hRev);
+    F(vRev);
+
+    F(freezeMode);
+    F(freeze);
+    F(priority);
+    F(gamma);
+
+    F(apcH);
+    F(apcV);
+
+    F(coronagraph);
+    F(colorBars);
+
+    F(tec);
+    F(tecLevel);
+    F(dewRemoval);
+
+    fprintf(fp, "tecArea = %u %u %u %u %u %u\n",
+	    cam->tecArea[0],
+	    cam->tecArea[1],
+	    cam->tecArea[2],
+	    cam->tecArea[3],
+	    cam->tecArea[4],
+	    cam->tecArea[5]);
+
+    F(zoom);
+    F(zoomLevel);
+
+#undef F
+
+    fclose(fp);
+
+    return true;
+}
+
+static bool
+_tok(char *p, char **name, char **val)
+{
+    char *const n = p;
+    while (*p && !isspace(*p))
+	++p;
+    if (!*p)
+	return false;
+    *p++ = 0;
+    while (*p && isspace(*p))
+	++p;
+    if (*p != '=')
+	return false;
+    ++p;
+    while (*p && isspace(*p))
+	++p;
+    if (!*p)
+	return false;
+
+    *name = n;
+    *val = p;
+    return true;
+}
+
+static bool
+_load_cam(Camera *cam, const char *filename)
+{
+    static Camera s_cam; // for zero-fill
+    *cam = s_cam;
+
+    FILE *fp = fopen(filename, "r");
+    if (fp == 0)
+	return false;
+
+    bool ret = false;
+    char *buf = 0;
+    size_t bufsz = 0;
+    ssize_t n;
+
+    for (unsigned int linenr = 1; (n = getline(&buf, &bufsz, fp)) != -1; linenr++) {
+
+	// strip trailing whitespace (including line separator)
+	char *p = &buf[n - 1];
+	while (p >= &buf[0] && isspace(*p))
+	    *p = 0;
+
+	if (linenr == 1) {
+	    if (strcmp(buf, FIRSTLINE) != 0)
+		goto out;
+	    continue;
+	}
+
+	// skip leading whitespace
+	p = buf;
+	while (*p && isspace(*p))
+	    ++p;
+	if (*p == 0 || *p == '#')
+	    continue;
+
+	char *name;
+	char *val;
+	if (!_tok(p, &name, &val))
+	    goto out;
+
+	// wxPrintf("name = [%s]  val = [%s]\n", name, val);
+
+	unsigned int vv;
+
+#define F(fld) do { \
+	    if (strcmp(name, #fld) == 0) { \
+		if (sscanf(val, "%u", &vv) != 1) \
+		    goto out; \
+		cam->fld = vv; \
+		goto continue2; \
+	    } \
+	} while (false)
+
+	// todo: wxString title
+	F(titlePos);
+	F(senseUp);
+	F(alcElc);
+	F(alc);
+	F(elc);
+	F(blc);
+	F(blcPreset);
+
+	if (strcmp(name, "blcArea") == 0) {
+	    u8 v[6];
+	    if (sscanf(val, "%u %u %u %u %u %u", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]) != 6)
+		goto out;
+	    for (unsigned int i = 0; i < 6; i++)
+		cam->blcArea[i] = v[i];
+	    goto continue2;
+	}
+
+	F(blcPeak);
+	F(agc);
+	F(agcLevel);
+	F(agcManual);
+	F(wtb);
+	F(wtbMan);
+	F(wtbRed);
+	F(wtbBlue);
+	F(sync);
+
+#define M(m) do { \
+	    if (strcmp(name, "mask." #m) == 0) { \
+		u8 v[5]; \
+		if (sscanf(val, "%u %u %u %u %u", &v[0], &v[1], &v[2], &v[3], &v[4]) != 5) \
+		    goto out; \
+		cam->mask[m].on = v[0]; \
+		for (unsigned int i = 0; i < 4; i++) \
+		    cam->mask[m].area[i] = v[1 + i]; \
+		goto continue2; \
+	    } \
+	} while (false)
+
+	M(0);
+	M(1);
+	M(2);
+	M(3);
+
+#undef M
+
+	F(neg);
+	F(hRev);
+	F(vRev);
+	F(freezeMode);
+	F(freeze);
+	F(priority);
+	F(gamma);
+	F(apcH);
+	F(apcV);
+	F(coronagraph);
+	F(colorBars);
+	F(tec);
+	F(tecLevel);
+	F(dewRemoval);
+
+	if (strcmp(name, "tecArea") == 0) {
+	    u8 v[6];
+	    if (sscanf(val, "%u %u %u %u %u %u", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]) != 6)
+		goto out;
+	    for (unsigned int i = 0; i < 6; i++)
+		cam->tecArea[i] = v[i];
+	    goto continue2;
+	}
+
+	F(zoom);
+	F(zoomLevel);
+
+#undef F
+
+    continue2:
+	;
+    }
+
+    ret = true;
+
+ out:
+    fclose(fp);
+
+    if (buf)
+	free(buf);
+
+    return ret;
+}
+
 static msg
 cmda(u8 a, const u8 *b, size_t len)
 {
   msg msg;
   mcxcmd_set(&msg, a, b, len);
-wxLogDebug("cmda a=0x%x b=[0x%x 0x%x 0x%x ...] l=%zu",(unsigned)a, (unsigned)b[0], (unsigned)b[1], (unsigned)b[2], len);
   return msg;
 }
 
@@ -543,17 +806,7 @@ _decode_title(const u8 *buf)
 }
 
 static void
-_emit_mask_enable(bool enable)
-{
-    u8 val = enable ? 1 : 0;
-    emit2(0x1d, 0, val);
-    emit2(0x1d, 1, val);
-    emit2(0x1d, 2, val);
-    emit2(0x1d, 3, val);
-}
-
-static void
-_emit_cross_box()
+_init_cross_box()
 {
 #if 1
     u8 a[4] = { 0x0e, 0x37, 0xc4, 0x3a, };
@@ -568,19 +821,18 @@ _emit_cross_box()
     u8 a[4] = { W/2-BOXW/2-BARW, 0,             W/2-BOXW/2,     H-1 };
     u8 b[4] = { W/2+BOXW/2,     0,             W/2+BOXW/2+BARW, H-1 };
 #endif
-    emit2(0x1d, 0x10, &a[0], sizeof(a));
-    emit2(0x1d, 0x11, &b[0], sizeof(b));
-    emit2(0x1d, 0x12, &c[0], sizeof(c));
-    emit2(0x1d, 0x13, &d[0], sizeof(d));
+
+    memcpy(&s_cam1.mask[0].area[0], &a[0], sizeof(a));
+    memcpy(&s_cam1.mask[1].area[0], &b[0], sizeof(b));
+    memcpy(&s_cam1.mask[2].area[0], &c[0], sizeof(c));
+    memcpy(&s_cam1.mask[3].area[0], &d[0], sizeof(d));
 }
 
 static void
-_emit_mask(int mask)
+_init_tec_area()
 {
-    switch (mask) {
-    case 0: _emit_mask_enable(false); break;
-    case 2: _emit_cross_box(); _emit_mask_enable(true); break;
-    }
+    for (unsigned int i = 0; i < 6; i++)
+	s_cam1.tecArea[i] = 0xff;
 }
 
 static void
@@ -677,8 +929,11 @@ gen_cmds(const Camera& a, const Camera& b)
     emit2(0x1c, 0, b.sync);
   }
 
-  if (b.mask != a.mask) {
-      _emit_mask(b.mask);
+  for (unsigned int m = 0; m < 4; m++) {
+      if (b.mask[m].on != a.mask[m].on)
+	  emit2(0x1d, m, b.mask[m].on);
+      if (memcmp(&b.mask[m].area[0], &a.mask[m].area[0], sizeof(b.mask[m].area)) != 0)
+	  emit2(0x1d, 0x10 + m, &b.mask[m].area[0], sizeof(b.mask[m].area));
   }
 
   if (b.neg != a.neg) {
@@ -745,7 +1000,7 @@ gen_cmds(const Camera& a, const Camera& b)
     // set dewRemoval
     emit2(0x47, 3, b.dewRemoval);
   }
-  if (memcmp(&b.tecArea[0], &a.tecArea[0], sizeof(a.blcArea)) != 0) {
+  if (memcmp(&b.tecArea[0], &a.tecArea[0], sizeof(a.tecArea)) != 0) {
     // set tecArea
     emit1(0x48, &b.tecArea[0], sizeof(b.tecArea));
   }
@@ -1041,15 +1296,14 @@ _handle_smry_3()
   s_cam0.blc = s_fsm_response.data[2];
   s_cam0.blcPreset = s_fsm_response.data[3];
   s_cam0.agc = s_fsm_response.data[4];
-  //  s_cam0.sync = s_fsm_response.data[5];
-  s_cam0.sync = SYNC_INT;
+  s_cam0.sync = s_fsm_response.data[5];
   s_cam0.neg = s_fsm_response.data[6];
   s_cam0.hRev = s_fsm_response.data[7];
   s_cam0.priority = s_fsm_response.data[8];
-  //  s_cam0.mask[0] = s_fsm_response.data[9];
-  //  s_cam0.mask[1] = s_fsm_response.data[10];
-  //  s_cam0.mask[2] = s_fsm_response.data[11];
-  //  s_cam0.mask[3] = s_fsm_response.data[12];
+  s_cam0.mask[0].on = s_fsm_response.data[9];
+  s_cam0.mask[1].on = s_fsm_response.data[10];
+  s_cam0.mask[2].on = s_fsm_response.data[11];
+  s_cam0.mask[3].on = s_fsm_response.data[12];
 }
 
 static void
@@ -1099,17 +1353,34 @@ _handle_smry_6()
 static void
 _handle_smry()
 {
-  wxLogDebug("handle smry %u", (unsigned int) s_fsm_response.data[0]);
+    switch (s_fsm_response.ctrl) {
 
-  switch (s_fsm_response.data[0]) {
-  case 0: _handle_smry_0(); break;
-  case 1: _handle_smry_1(); break;
-  case 2: _handle_smry_2(); break;
-  case 3: _handle_smry_3(); break;
-  case 4: _handle_smry_4(); break;
-  case 5: _handle_smry_5(); break;
-  case 6: _handle_smry_6(); break;
-  }
+    case 0x45:
+	wxLogDebug("handle smry %u", (unsigned int) s_fsm_response.data[0]);
+
+	switch (s_fsm_response.data[0]) {
+	case 0: _handle_smry_0(); break;
+	case 1: _handle_smry_1(); break;
+	case 2: _handle_smry_2(); break;
+	case 3: _handle_smry_3(); break;
+	case 4: _handle_smry_4(); break;
+	case 5: _handle_smry_5(); break;
+	case 6: _handle_smry_6(); break;
+	}
+	break;
+
+    case 0x1d:
+	{
+	    wxLogDebug("handle mask %u", (unsigned int) s_fsm_response.data[0]);
+	    u8 which = s_fsm_response.data[0];
+	    if (which >= 0x10 && which <= 0x13) {
+		unsigned int m = which - 0x10;
+		for (unsigned int i = 0; i < 4; i++)
+		    s_cam0.mask[m].area[i] = s_fsm_response.data[1 + i];
+	    }
+	    break;
+        }
+    }
 }
 
 static void
@@ -1118,6 +1389,11 @@ _init_ctrl_vals()
   _win()->InitControls(&s_cam0);
   s_cam1 = s_cam0;
   s_cmdmap.clear();
+
+  // force fixed values
+  s_cam1.sync = SYNC_INT;
+  _init_cross_box();
+  _init_tec_area();
 }
 
 static void
@@ -1217,10 +1493,16 @@ static void
 _send_next_smry_cmd()
 {
     msg req;
-    mcxcmd_get(&req, 0x45, s_fsm_next_smry);
+
+    // 0..6  summary command 0x45
+    // 7..10 mask areas
+    if (s_fsm_next_smry < 7)
+        mcxcmd_get(&req, 0x45, s_fsm_next_smry);
+    else
+        mcxcmd_get(&req, 0x1d, 0x10 + s_fsm_next_smry - 7);
 
     char buf[32];
-    snprintf(buf, sizeof(buf), "Reading from camera (%u/7)", s_fsm_next_smry + 1);
+    snprintf(buf, sizeof(buf), "Reading from camera (%u/11)", s_fsm_next_smry + 1);
     status(buf);
 
     s_fsm_got_ack = false;
@@ -1283,44 +1565,16 @@ _cam_reading2(bool *done)
         s_fsm_timer->Stop();
 
         mcxcomm_send_ack();
-wxMilliSleep(COMMAND_DELAY_MS);
-#if 0
-        _handle_smry();
-#else
-        if (s_fsm_response.ctrl == 0x45)
-            _handle_smry();
-#endif
 
-#if 0
-        if (++s_fsm_next_smry < 7) {
+	wxMilliSleep(COMMAND_DELAY_MS); // todo needed? make async?
+
+        _handle_smry();
+
+        if (++s_fsm_next_smry < 11) {
             _send_next_smry_cmd();
             s_camera_state = CAM_READING1;
             *done = true;
         }
-#else
-        if (++s_fsm_next_smry < 11) {
-            if (s_fsm_next_smry < 7)
-                _send_next_smry_cmd();
-            else
-{
-    msg req;
-    mcxcmd_get(&req, 0x1d, 0x10 + s_fsm_next_smry - 7);
-
-    char buf[32];
-    snprintf(buf, sizeof(buf), "Reading from camera (%u/7)", s_fsm_next_smry + 1);
-    status(buf);
-
-    s_fsm_got_ack = false;
-    s_fsm_got_response = false;
-    mcxcomm_send_msg(req);
-
-    s_fsm_timeout = false;
-    s_fsm_timer->Start(ACK_TIMEOUT_MS, wxTIMER_ONE_SHOT);
-}
-            s_camera_state = CAM_READING1;
-            *done = true;
-        }
-#endif
         else {
             _init_ctrl_vals();
             _enable_controls(EN_ENABLE_ALL);
@@ -2370,8 +2624,7 @@ MainFrameD::InitControls(Camera *cam)
 
   doEnablesForWtb();
 
-  cam->mask = 0; // off - don't persist this
-  m_toolBar->ToggleTool(ID_CROSS_BOX, false);
+  m_toolBar->ToggleTool(ID_CROSS_BOX, cam->mask[0].on != 0);
 
   m_toolBar->ToggleTool(ID_NEGATIVE, cam->neg == 1);
   m_toolBar->ToggleTool(ID_H_REV, cam->hRev == 1);
@@ -2504,6 +2757,10 @@ MainFrameD::ldClicked(wxCommandEvent& event)
 {
   wxLogDebug("%s", __FUNCTION__);
   // todo
+  Camera cam;
+  bool ok = _load_cam(&cam, "my.mcx");
+  wxLogDebug("loaded ok=%d", ok);
+  // todo: update ctrls
 }
 
 void
@@ -2511,13 +2768,16 @@ MainFrameD::svClicked(wxCommandEvent& event)
 {
   wxLogDebug("%s", __FUNCTION__);
   // todo
+  bool ok = _save_cam("my.mcx", &s_cam1);
+  wxLogDebug("saved ok=%d", ok);
 }
 
 void
 MainFrameD::xbClicked(wxCommandEvent& event)
 {
   bool on = m_toolBar->GetToolState(ID_CROSS_BOX);
-  s_cam1.mask = on ? 2 : 0;
+  for (unsigned int i = 0; i < 4; i++)
+      s_cam1.mask[i].on = on ? 1 : 0;
   dnotify(UPD_IMMEDIATE);
 }
 

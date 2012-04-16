@@ -177,3 +177,18 @@ agc change timer:
 
    agc-stable:
       nop
+
+==============================================
+
+read smry
+read non-smry
+  masks
+  tec-area?
+
+force fixed vals
+  tec-area
+  masks
+
+run cmds until no more
+
+init ctrl vals
