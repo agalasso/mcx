@@ -192,3 +192,12 @@ force fixed vals
 run cmds until no more
 
 init ctrl vals
+
+=========================================
+
+load from file:
+
+   load into tmp cam
+   s_cam1 = tmp cam
+   init ctrl vals (s_cam1)
+   do agc timer if needed

@@ -39,9 +39,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	m_toolBar->AddTool( ID_PLANET, wxT("tool"), wxBitmap( PL_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load planetary presets"), wxT("Load planetary presets"), NULL ); 
 	
-	m_toolBar->AddTool( ID_LUNAR, wxT("tool"), wxBitmap( LU_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load Lunar presets"), wxT("Load Lunar presets"), NULL ); 
+	m_toolBar->AddTool( ID_LUNAR, wxT("tool"), wxBitmap( LU_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load lunar presets"), wxT("Load lunar presets"), NULL ); 
 	
-	m_toolBar->AddTool( ID_SOLAR, wxT("tool"), wxBitmap( solar_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load Solar presets"), wxT("Load Solar presets"), NULL ); 
+	m_toolBar->AddTool( ID_SOLAR, wxT("tool"), wxBitmap( solar_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load solar presets"), wxT("Load solar presets"), NULL ); 
 	
 	m_toolBar->AddTool( ID_LOAD, wxT("tool"), wxBitmap( Ld_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load custom presets"), wxT("Load custom presets"), NULL ); 
 	

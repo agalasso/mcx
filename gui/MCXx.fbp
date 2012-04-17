@@ -262,8 +262,8 @@
                             <property name="label">tool</property>
                             <property name="name">m_lunar</property>
                             <property name="permission">protected</property>
-                            <property name="statusbar">Load Lunar presets</property>
-                            <property name="tooltip">Load Lunar presets</property>
+                            <property name="statusbar">Load lunar presets</property>
+                            <property name="tooltip">Load lunar presets</property>
                             <event name="OnAuiToolBarBeginDrag"></event>
                             <event name="OnAuiToolBarMiddleClick"></event>
                             <event name="OnAuiToolBarOverflowClick"></event>
@@ -283,8 +283,8 @@
                             <property name="label">tool</property>
                             <property name="name">m_solar</property>
                             <property name="permission">protected</property>
-                            <property name="statusbar">Load Solar presets</property>
-                            <property name="tooltip">Load Solar presets</property>
+                            <property name="statusbar">Load solar presets</property>
+                            <property name="tooltip">Load solar presets</property>
                             <event name="OnAuiToolBarBeginDrag"></event>
                             <event name="OnAuiToolBarMiddleClick"></event>
                             <event name="OnAuiToolBarOverflowClick"></event>
