@@ -201,3 +201,8 @@ load from file:
    s_cam1 = tmp cam
    init ctrl vals (s_cam1)
    do agc timer if needed
+
+======================================
+CCD Mode:
+   AGC Off
+   APC 0,0

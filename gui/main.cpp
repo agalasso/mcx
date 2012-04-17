@@ -1,4 +1,6 @@
 // TODO
+//   at startup, start agc timer if needed
+//       needs new state for sending init commands - use smry stuff?
 //   about box
 //   logging
 //   force fixed statings at startup:
@@ -131,6 +133,7 @@ enum IntState {
 enum AgcState {
   AGC_STABLE,
   AGC_WAIT_INIT,
+  AGC_WAIT_INIT_NOWAIT,
   AGC_WAIT1,
   AGC_WAIT2,
   AGC_CLEANUP,
@@ -803,7 +806,7 @@ _decode_title(const u8 *buf)
 }
 
 static void
-_init_cross_box()
+_init_cross_box(Camera *cam)
 {
 #if 1
     u8 a[4] = { 0x0e, 0x37, 0xc4, 0x3a, };
@@ -819,17 +822,17 @@ _init_cross_box()
     u8 b[4] = { W/2+BOXW/2,     0,             W/2+BOXW/2+BARW, H-1 };
 #endif
 
-    memcpy(&s_cam1.mask[0].area[0], &a[0], sizeof(a));
-    memcpy(&s_cam1.mask[1].area[0], &b[0], sizeof(b));
-    memcpy(&s_cam1.mask[2].area[0], &c[0], sizeof(c));
-    memcpy(&s_cam1.mask[3].area[0], &d[0], sizeof(d));
+    memcpy(&cam->mask[0].area[0], &a[0], sizeof(a));
+    memcpy(&cam->mask[1].area[0], &b[0], sizeof(b));
+    memcpy(&cam->mask[2].area[0], &c[0], sizeof(c));
+    memcpy(&cam->mask[3].area[0], &d[0], sizeof(d));
 }
 
 static void
-_init_tec_area()
+_init_tec_area(Camera *cam)
 {
     for (unsigned int i = 0; i < 6; i++)
-	s_cam1.tecArea[i] = 0xff;
+	cam->tecArea[i] = 0xff;
 }
 
 static void
@@ -1117,9 +1120,13 @@ typedef void (wxEvtHandler::*McxMsgEventFunction)(McxMsgEvent&);
 
 class MainFrameD : public MainFrame
 {
+    typedef MainFrame inherited;
+
 public:
     MainFrameD(wxWindow *parent);
     ~MainFrameD();
+
+    bool Destroy();
 
     void senseUpScroll(wxScrollEvent& event);
     void alcScroll(wxScrollEvent& event);
@@ -1227,6 +1234,26 @@ MainFrameD::~MainFrameD()
   delete s_cmd_delay_timer;
   delete s_int_timer;
   delete s_agc_timer;
+}
+
+static void
+_kill_reader(const char *whence)
+{
+    if (s_reader) {
+        s_reader->m_terminated = true;
+        wxLogDebug("%s WAIT RDR start", whence);
+        s_reader->Wait();
+        wxLogDebug("%s WAIT RDR done", whence);
+        delete s_reader;
+        s_reader = 0;
+    }
+}
+
+bool
+MainFrameD::Destroy()
+{
+    _kill_reader(__FUNCTION__);
+    return inherited::Destroy();
 }
 
 static wxString
@@ -1381,14 +1408,18 @@ _handle_smry()
 }
 
 static void
+_force_fixed_vals(Camera *cam)
+{
+    // force fixed camera settings
+    cam->sync = SYNC_INT;
+    _init_cross_box(cam);
+    _init_tec_area(cam);
+}
+
+static void
 _init_ctrl_vals()
 {
   _win()->InitControls(&s_cam1);
-
-  // force fixed values
-  s_cam1.sync = SYNC_INT;
-  _init_cross_box();
-  _init_tec_area();
 }
 
 static void
@@ -1584,6 +1615,7 @@ _cam_reading2(bool *done)
             // when window created.
             _clear_buffered_commands();
 #endif
+	    _force_fixed_vals(&s_cam1);
             _init_ctrl_vals();
             _enable_controls(EN_ENABLE_ALL);
             status("");
@@ -1594,7 +1626,7 @@ _cam_reading2(bool *done)
         s_camera_state = CAM_DISCOVER;
     }
     else {
-        *done = 1;
+        *done = true;
     }
 }
 
@@ -1879,9 +1911,10 @@ _send_agc()
         s_cam1.agc = 2; // manual
         s_cam1.agcManual = val[p];
     }
+wxLogDebug("SENDAGC agc %u=>%u %u=>%u %u=>%u",s_cam0.agc,s_cam1.agc,s_cam0.agcManual,s_cam1.agcManual,s_cam0.senseUp,s_cam1.senseUp);
     bool changed =
-        s_cam1.agc != s_cam0.agc ||
-        s_cam1.agcManual != s_cam0.agcManual;
+        s_cam1.agc &&
+        (!s_cam0.agc || s_cam1.agcManual != s_cam0.agcManual);
 
     int const suval = _senseup_val(win->m_senseUp->GetValue());
     s_cam1.senseUp = suval;
@@ -1917,6 +1950,13 @@ _agc_wait_init(bool *done)
     s_agc_timer->Start(4000, wxTIMER_ONE_SHOT);
     s_agc_wait_state = AGC_WAIT1;
     *done = true;
+}
+
+static void
+_agc_wait_init_nowait(bool *done)
+{
+    s_agc_timer_expired = true;
+    s_agc_wait_state = AGC_WAIT1;
 }
 
 static void
@@ -1974,11 +2014,12 @@ _do_agc_wait_fsm()
 
   do {
     switch (s_agc_wait_state) {
-    case AGC_STABLE:    done = true;            break;
-    case AGC_WAIT_INIT: _agc_wait_init(&done);  break;
-    case AGC_WAIT1:     _agc_wait1(&done);      break;
-    case AGC_WAIT2:     _agc_wait2(&done);      break;
-    case AGC_CLEANUP:   _agc_cleanup(&done);    break;
+    case AGC_STABLE:           done = true;                   break;
+    case AGC_WAIT_INIT:        _agc_wait_init(&done);         break;
+    case AGC_WAIT_INIT_NOWAIT: _agc_wait_init_nowait(&done);  break;
+    case AGC_WAIT1:            _agc_wait1(&done);             break;
+    case AGC_WAIT2:            _agc_wait2(&done);             break;
+    case AGC_CLEANUP:          _agc_cleanup(&done);           break;
     default:
       wxASSERT(false);
       done = true;
@@ -2046,11 +2087,14 @@ _do_camera_fsm()
   s_fsm_active = false;
 }
 
+static int s_hack;
 static void
 _dnotify()
 {
   // fill in s_cmdmap
   gen_cmds(s_cam0, s_cam1);
+wxLogDebug("dnotify updated cam0");
+//while (s_hack) wxMilliSleep(1000);
   s_cam0 = s_cam1;
 
   // send buffered commands to camera
@@ -2067,6 +2111,8 @@ dnotify(int when)
     break;
   case UPD_DEFER:
     // reset timer
+wxLogDebug("dnotify upd_defer");
+//while (s_hack) wxMilliSleep(1000);
     s_deferred_evt_timer->Start(DEFERRED_EVENT_INTERVAL, wxTIMER_ONE_SHOT);
     break;
   }
@@ -2766,9 +2812,18 @@ _load_cam(const char *filename)
     Camera cam;
     bool ok = __load_cam(&cam, filename);
     wxLogDebug("loaded ok=%d", ok);
-    s_cam1 = cam;
-    _init_ctrl_vals();
-    // todo: do agc timer if needed
+    if (ok) {
+        _force_fixed_vals(&cam);
+	s_cam1 = cam;
+wxLogDebug("loadcam updated cam1");
+s_hack=1;
+
+	_init_ctrl_vals();
+
+	// activate AGC FSM
+        s_agc_wait_state = AGC_WAIT_INIT_NOWAIT;
+        _do_camera_fsm();
+    }
 }
 
 void
@@ -3049,14 +3104,8 @@ McxApp::OnInit()
 int
 McxApp::OnExit()
 {
-    if (s_reader) {
-        s_reader->m_terminated = true;
-        wxLogDebug("APP EXIT WAIT RDR start");
-        s_reader->Wait();
-        wxLogDebug("APP EXIT WAIT RDR done");
-        delete s_reader;
-        s_reader = 0;
-    }
+    _kill_reader(__FUNCTION__);
+
     return 0;
 //  return inherited::OnExit(); // todo
 }
