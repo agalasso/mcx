@@ -2698,7 +2698,7 @@ MainFrameD::InitControls(Camera *cam)
 void
 MainFrameD::atwSelected(wxCommandEvent& event)
 {
-wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_atwBtn->GetValue(),m_atwBtn->IsEnabled());
+//wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_atwBtn->GetValue(),m_atwBtn->IsEnabled());
 
 //    m_awcBtn->SetValue(false);
 //    m_wtbRbBtn->SetValue(false);
@@ -2713,7 +2713,7 @@ wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),
 void
 MainFrameD::awcSelected(wxCommandEvent& event)
 {
-wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_awcBtn->GetValue(),m_awcBtn->IsEnabled());
+//wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_awcBtn->GetValue(),m_awcBtn->IsEnabled());
 
 //    m_atwBtn->SetValue(false);
 //    m_wtbRbBtn->SetValue(false);
@@ -2728,7 +2728,7 @@ wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),
 void
 MainFrameD::wtbRBSelected(wxCommandEvent& event)
 {
-wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtbRbBtn->GetValue(),m_wtbRbBtn->IsEnabled());
+//wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtbRbBtn->GetValue(),m_wtbRbBtn->IsEnabled());
 
 //    m_atwBtn->SetValue(false);
 //    m_awcBtn->SetValue(false);
@@ -2744,7 +2744,7 @@ wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),
 void
 MainFrameD::wtb3200Selected(wxCommandEvent& event)
 {
-wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtb3200Btn->GetValue(),m_wtb3200Btn->IsEnabled());
+//wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtb3200Btn->GetValue(),m_wtb3200Btn->IsEnabled());
 
 //    m_atwBtn->SetValue(false);
 //    m_awcBtn->SetValue(false);
@@ -2760,7 +2760,7 @@ wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),
 void
 MainFrameD::wtb5600Selected(wxCommandEvent& event)
 {
-wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtb5600Btn->GetValue(),m_wtb5600Btn->IsEnabled());
+//wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtb5600Btn->GetValue(),m_wtb5600Btn->IsEnabled());
 
 //    m_atwBtn->SetValue(false);
 //    m_awcBtn->SetValue(false);
