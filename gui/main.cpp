@@ -2919,7 +2919,34 @@ void
 MainFrameD::ccClicked(wxCommandEvent& event)
 {
     wxLogDebug("%s id=%d", __FUNCTION__, event.GetId());
-    // TODO
+
+    // set AGC Auto off
+    {
+	m_agcAuto->SetValue(0);
+	wxScrollEvent ev(wxEVT_SCROLL_TOP);
+	m_agcAuto->GetEventHandler()->ProcessEvent(ev);
+    }
+
+    // set AGC Manual off
+    {
+	m_agcMan->SetValue(0);
+	wxScrollEvent ev(wxEVT_SCROLL_TOP);
+	m_agcMan->GetEventHandler()->ProcessEvent(ev);
+    }
+
+    // set apc-h off
+    {
+	m_apcH->SetValue(0);
+	wxScrollEvent ev(wxEVT_SCROLL_TOP);
+	m_apcH->GetEventHandler()->ProcessEvent(ev);
+    }
+
+    // set apc-v off
+    {
+	m_apcV->SetValue(0);
+	wxScrollEvent ev(wxEVT_SCROLL_TOP);
+	m_apcV->GetEventHandler()->ProcessEvent(ev);
+    }
 }
 
 void

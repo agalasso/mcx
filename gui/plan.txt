@@ -9,7 +9,6 @@ TODO
   blc
   disable controls disable labels to make more obvious?
   top button functions:
-      ccd mode: agc off, apc off
       sleep camera:
          TEC noise detect on (full area selected), level=8
          wait 60 SEC
@@ -24,6 +23,7 @@ TODO
   send empty title (not just turn off); or, send new title before title on
 
 done:
+  ccd mode: agc off, apc off
   load/save/presets
   fix window height
   config window (comm port, anything else?)

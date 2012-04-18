@@ -67,7 +67,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	m_toolBar->AddSeparator(); 
 	
-	m_toolBar->AddTool( ID_CCD_MODE, wxT("tool"), wxBitmap( cc_xpm ), wxNullBitmap, wxITEM_CHECK, wxT("CCD Mode"), wxT("CCD Mode"), NULL ); 
+	m_toolBar->AddTool( ID_CCD_MODE, wxT("tool"), wxBitmap( cc_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("CCD Mode"), wxT("Apply CCD Mode settings"), NULL ); 
 	
 	m_toolBar->AddSeparator(); 
 	
