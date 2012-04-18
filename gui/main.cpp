@@ -1,48 +1,3 @@
-// TODO
-//   at startup, start agc timer if needed
-//       needs new state for sending init commands - use smry stuff?
-//   about box
-//   logging
-//   force fixed statings at startup:
-//      full tec area
-//      masks
-//      sync=int
-//   resolve COMMAND_DELAY_MS vs INT_CAPTURE_DELAY_MS
-//   tec on send full area
-//   blc
-//   disable controls disable labels to make more obvious?
-//   top button functions:
-//       load/save/presets
-//       ccd mode
-//       sleep camera
-//   rock re ALC/ELV and sensup mutually exclusive?
-//   config window (comm port, anything else?)
-//   app icon and window title TopLevelWindow->SetIcon
-//   resend mcx message if not acked?
-//   accept varios integration time formats  2m 2:30 2.5m
-//   fix window height
-//   title pos buttons
-//   send empty title (not just turn off); or, send new title before title on
-//   save full mask, not just mask type
-//   get rid of cross hairs
-//   toggle cross bars selected when read cam settings and find mask enabled
-//
-// done:
-//  agc timer for 128x
-//  button for solar
-//  sensup >0 => force alc/elc off
-//  disable/enable radio btns is sensing selected events and sending camera commands - not a problem
-//  int not writeble? - ok, if call Skip
-//  camera comm for windows
-//  fix toolbar background
-//  git
-//  3 minute agc change timer, + how to cancel it?
-//  integration fsm
-//  crash when integrating hit exit
-//  staus messages for reading camera state, maybe even a progress bar
-//    general status
-//         connecting, sending, integrating
-
 #include "wx/wxprec.h"
 #ifndef WX_PRECOMP
 # include "wx/wx.h"
@@ -145,6 +100,7 @@ typedef std::map<u32, msg> cmdmap_t;
 static cmdmap_t s_cmdmap;
 static msg s_active_cmd;
 static CameraState s_camera_state = CAM_INIT;
+static void (*s_fsm_cam_uptodate_cb)();
 static wxTimer *s_deferred_evt_timer;
 static wxTimer *s_fsm_timer;
 static bool s_fsm_timeout;
@@ -169,6 +125,7 @@ static bool s_agc_timer_expired;
 static bool s_agc_wait_cancel_clicked;
 
 static void _do_camera_fsm();
+static void _dnotify();
 static void dnotify(int when);
 
 enum UpdateWhen {
@@ -1408,7 +1365,7 @@ _handle_smry()
 }
 
 static void
-_force_fixed_vals(Camera *cam)
+_init_fixed_vals(Camera *cam)
 {
     // force fixed camera settings
     cam->sync = SYNC_INT;
@@ -1425,6 +1382,7 @@ _init_ctrl_vals()
 static void
 _clear_buffered_commands()
 {
+wxLogDebug("clear buffered commands sets cam1 = cam0");
     s_cam1 = s_cam0;
     s_cmdmap.clear();
 }
@@ -1589,6 +1547,14 @@ _cam_reading1(bool *done)
 }
 
 static void
+_init_cmds_done()
+{
+    _init_ctrl_vals();
+    _enable_controls(EN_ENABLE_ALL);
+    status("");
+}
+
+static void
 _cam_reading2(bool *done)
 {
     //  wxLogDebug("dostate %s", __FUNCTION__);
@@ -1615,10 +1581,11 @@ _cam_reading2(bool *done)
             // when window created.
             _clear_buffered_commands();
 #endif
-	    _force_fixed_vals(&s_cam1);
-            _init_ctrl_vals();
-            _enable_controls(EN_ENABLE_ALL);
-            status("");
+	    _init_fixed_vals(&s_cam1);
+            _dnotify();
+            s_fsm_cam_uptodate_cb = &_init_cmds_done;
+            status("Initializing camera ...");
+
             s_camera_state = CAM_UPTODATE;
         }
     }
@@ -1695,6 +1662,13 @@ _cam_uptodate(bool *done)
         s_fsm_timer->Start(ACK_TIMEOUT_MS, wxTIMER_ONE_SHOT);
 
         s_camera_state = CAM_SENDING1;
+    }
+    else {
+        if (s_fsm_cam_uptodate_cb) {
+            void (*cb)() = s_fsm_cam_uptodate_cb;
+            s_fsm_cam_uptodate_cb = 0;
+            (*cb)();
+        }
     }
 
     *done = true;
@@ -2087,14 +2061,12 @@ _do_camera_fsm()
   s_fsm_active = false;
 }
 
-static int s_hack;
 static void
 _dnotify()
 {
   // fill in s_cmdmap
   gen_cmds(s_cam0, s_cam1);
 wxLogDebug("dnotify updated cam0");
-//while (s_hack) wxMilliSleep(1000);
   s_cam0 = s_cam1;
 
   // send buffered commands to camera
@@ -2111,8 +2083,6 @@ dnotify(int when)
     break;
   case UPD_DEFER:
     // reset timer
-wxLogDebug("dnotify upd_defer");
-//while (s_hack) wxMilliSleep(1000);
     s_deferred_evt_timer->Start(DEFERRED_EVENT_INTERVAL, wxTIMER_ONE_SHOT);
     break;
   }
@@ -2305,6 +2275,7 @@ MainFrameD::agcManUpdated()
 void
 MainFrameD::agcManScroll(wxScrollEvent& event)
 {
+wxLogDebug("%s enter",__FUNCTION__);
     agcManUpdated();
 
     int const p = event.GetPosition();
@@ -2537,21 +2508,23 @@ MainFrameD::dewRemovalScroll(wxScrollEvent& event)
 void
 MainFrameD::coronagraphUpdated()
 {
-  const char *sval[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", };
-  int const p = m_coronagraph->GetValue();
-  wxASSERT(p >= 0 && p < lengthof(sval));
-  m_coronagraphVal->SetLabel(sval[p]);
+    const char *sval[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+                           "10", "11", "12", "13", "14", "15", "16", "17", "18", };
+    int const p = m_coronagraph->GetValue();
+    wxASSERT(p >= 0 && p < lengthof(sval));
+    m_coronagraphVal->SetLabel(sval[p]);
 }
 
 void
 MainFrameD::coronagraphScroll(wxScrollEvent& event)
 {
-  coronagraphUpdated();
-  int const val[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-  int const p = event.GetPosition();
-  wxASSERT(p >= 0 && p < lengthof(val));
-  s_cam1.coronagraph = val[p];
-  dnotify(UPD_DEFER);
+    coronagraphUpdated();
+    int const val[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+                        10, 11, 12, 13, 14, 15, 16, 17, 18, };
+    int const p = event.GetPosition();
+    wxASSERT(p >= 0 && p < lengthof(val));
+    s_cam1.coronagraph = val[p];
+    dnotify(UPD_DEFER);
 }
 
 void
@@ -2661,7 +2634,6 @@ MainFrameD::InitControls(Camera *cam)
     m_wtbRbBtn->SetValue(false);
     m_wtb3200Btn->SetValue(false);
     m_wtb5600Btn->SetValue(false);
-    cam->wtbMan = 2;
   }
   else { // man
     m_atwBtn->SetValue(false);
@@ -2727,6 +2699,12 @@ void
 MainFrameD::atwSelected(wxCommandEvent& event)
 {
 //wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_atwBtn->GetValue(),m_atwBtn->IsEnabled());
+
+    m_awcBtn->SetValue(false);
+    m_wtbRbBtn->SetValue(false);
+    m_wtb3200Btn->SetValue(false);
+    m_wtb5600Btn->SetValue(false);
+
     doEnablesForWtb();
     s_cam1.wtb = 0; // atw
     dnotify(UPD_IMMEDIATE);
@@ -2736,6 +2714,12 @@ void
 MainFrameD::awcSelected(wxCommandEvent& event)
 {
 //wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_awcBtn->GetValue(),m_awcBtn->IsEnabled());
+
+    m_atwBtn->SetValue(false);
+    m_wtbRbBtn->SetValue(false);
+    m_wtb3200Btn->SetValue(false);
+    m_wtb5600Btn->SetValue(false);
+
     doEnablesForWtb();
     s_cam1.wtb = 1; // awc
     dnotify(UPD_IMMEDIATE);
@@ -2745,6 +2729,12 @@ void
 MainFrameD::wtbRBSelected(wxCommandEvent& event)
 {
 //wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtbRbBtn->GetValue(),m_wtbRbBtn->IsEnabled());
+
+    m_atwBtn->SetValue(false);
+    m_awcBtn->SetValue(false);
+    m_wtb3200Btn->SetValue(false);
+    m_wtb5600Btn->SetValue(false);
+
     doEnablesForWtb();
     s_cam1.wtb = 2; // manual
     s_cam1.wtbMan = 2; // user
@@ -2755,6 +2745,12 @@ void
 MainFrameD::wtb3200Selected(wxCommandEvent& event)
 {
 //wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtb3200Btn->GetValue(),m_wtb3200Btn->IsEnabled());
+
+    m_atwBtn->SetValue(false);
+    m_awcBtn->SetValue(false);
+    m_wtbRbBtn->SetValue(false);
+    m_wtb5600Btn->SetValue(false);
+
     doEnablesForWtb();
     s_cam1.wtb = 2; // manual
     s_cam1.wtbMan = 0; // 3200
@@ -2765,6 +2761,12 @@ void
 MainFrameD::wtb5600Selected(wxCommandEvent& event)
 {
 //wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtb5600Btn->GetValue(),m_wtb5600Btn->IsEnabled());
+
+    m_atwBtn->SetValue(false);
+    m_awcBtn->SetValue(false);
+    m_wtbRbBtn->SetValue(false);
+    m_wtb3200Btn->SetValue(false);
+
     doEnablesForWtb();
     s_cam1.wtb = 2; // manual
     s_cam1.wtbMan = 1; // 5600
@@ -2778,34 +2780,6 @@ MainFrameD::titleText(wxCommandEvent& event)
   dnotify(UPD_DEFER);
 }
 
-void
-MainFrameD::dsClicked(wxCommandEvent& event)
-{
-  wxLogDebug("%s", __FUNCTION__);
-  // todo: load ds presets
-}
-
-void
-MainFrameD::plClicked(wxCommandEvent& event)
-{
-  wxLogDebug("%s", __FUNCTION__);
-  // todo: load ds presets
-}
-
-void
-MainFrameD::luClicked(wxCommandEvent& event)
-{
-  wxLogDebug("%s", __FUNCTION__);
-  // todo
-}
-
-void
-MainFrameD::solarClicked(wxCommandEvent& event)
-{
-  wxLogDebug("%s", __FUNCTION__);
-  // todo
-}
-
 static void
 _load_cam(const char *filename)
 {
@@ -2813,10 +2787,9 @@ _load_cam(const char *filename)
     bool ok = __load_cam(&cam, filename);
     wxLogDebug("loaded ok=%d", ok);
     if (ok) {
-        _force_fixed_vals(&cam);
+        _init_fixed_vals(&cam);
 	s_cam1 = cam;
 wxLogDebug("loadcam updated cam1");
-s_hack=1;
 
 	_init_ctrl_vals();
 
@@ -2824,6 +2797,34 @@ s_hack=1;
         s_agc_wait_state = AGC_WAIT_INIT_NOWAIT;
         _do_camera_fsm();
     }
+}
+
+void
+MainFrameD::dsClicked(wxCommandEvent& event)
+{
+  wxLogDebug("%s", __FUNCTION__);
+  _load_cam("dso.mcx");
+}
+
+void
+MainFrameD::plClicked(wxCommandEvent& event)
+{
+  wxLogDebug("%s", __FUNCTION__);
+  _load_cam("planetary.mcx");
+}
+
+void
+MainFrameD::luClicked(wxCommandEvent& event)
+{
+  wxLogDebug("%s", __FUNCTION__);
+  _load_cam("lunar.mcx");
+}
+
+void
+MainFrameD::solarClicked(wxCommandEvent& event)
+{
+  wxLogDebug("%s", __FUNCTION__);
+  _load_cam("solar.mcx");
 }
 
 void
@@ -2985,79 +2986,96 @@ MainFrameD::OnMcxMsg(McxMsgEvent& event)
 void
 MainFrameD::EnableControls(EnableType how)
 {
-  wxLogDebug("enable controls %d", how);
+    wxLogDebug("enable controls %d", how);
 
-  bool enable;
-  bool for_int;
+#if defined(__WXMSW__)
+    // workaround MSW sending radio button selected events when buttons are
+    // disabled by saving the values here and restoring them below after the
+    // enables are done
+    bool v1 = m_atwBtn->GetValue();
+    bool v2 = m_awcBtn->GetValue();
+    bool v3 = m_wtbRbBtn->GetValue();
+    bool v4 = m_wtb3200Btn->GetValue();
+    bool v5 = m_wtb5600Btn->GetValue();
+#endif
 
-  switch (how) {
-  case EN_DISABLE:
-    enable = false;
-    for_int = false;
-    break;
-  case EN_DISABLE_FOR_INT:
-    enable = false;
-    for_int = true;
-    break;
-  case EN_ENABLE_ALL:
-    enable = true;
-    for_int = false;
-    break;
-  }
+    bool enable;
+    bool for_int;
 
-  m_senseUp->Enable(enable);
-  m_alc->Enable(enable);
-  m_elc->Enable(enable);
-  m_agcMan->Enable(enable);
-  m_agcAuto->Enable(enable);
-  m_priority->Enable(enable);
-  m_tecLevel->Enable(enable);
-  m_dewRemoval->Enable(enable);
-  m_coronagraph->Enable(enable);
-  m_titleTL->Enable(enable);
-  m_titleTR->Enable(enable);
-  m_titleBL->Enable(enable);
-  m_titleBR->Enable(enable);
-  m_title->Enable(enable);
-  m_zoom->Enable(enable);
+    switch (how) {
+    case EN_DISABLE:
+        enable = false;
+        for_int = false;
+        break;
+    case EN_DISABLE_FOR_INT:
+        enable = false;
+        for_int = true;
+        break;
+    case EN_ENABLE_ALL:
+        enable = true;
+        for_int = false;
+        break;
+    }
 
-  m_toolBar->EnableTool(ID_DSO, enable);
-  m_toolBar->EnableTool(ID_PLANET, enable);
-  m_toolBar->EnableTool(ID_LUNAR, enable);
-  m_toolBar->EnableTool(ID_SOLAR, enable);
-  m_toolBar->EnableTool(ID_LOAD, enable);
-  m_toolBar->EnableTool(ID_SAVE, enable);
-  m_toolBar->EnableTool(ID_CROSS_BOX, enable);
-  m_toolBar->EnableTool(ID_COLOR_BARS, enable);
-  m_toolBar->EnableTool(ID_H_REV, enable);
-  m_toolBar->EnableTool(ID_V_REV, enable);
-  m_toolBar->EnableTool(ID_NEGATIVE, enable);
-  m_toolBar->EnableTool(ID_CCD_MODE, enable);
-  m_toolBar->EnableTool(ID_SLEEP, enable);
+    m_senseUp->Enable(enable);
+    m_alc->Enable(enable);
+    m_elc->Enable(enable);
+    m_agcMan->Enable(enable);
+    m_agcAuto->Enable(enable);
+    m_priority->Enable(enable);
+    m_tecLevel->Enable(enable);
+    m_dewRemoval->Enable(enable);
+    m_coronagraph->Enable(enable);
+    m_titleTL->Enable(enable);
+    m_titleTR->Enable(enable);
+    m_titleBL->Enable(enable);
+    m_titleBR->Enable(enable);
+    m_title->Enable(enable);
+    m_zoom->Enable(enable);
 
-  if (!for_int) {
-    m_int->Enable(enable);
-    m_intBtn->Enable(enable);
-    m_gamma->Enable(enable);
-    m_apcH->Enable(enable);
-    m_apcV->Enable(enable);
-    m_toolBar->EnableTool(ID_FREEZE, enable);
-    m_atwBtn->Enable(enable);
-    m_awcBtn->Enable(enable);
-    m_awcSet->Enable(enable);
-    m_wtbRbBtn->Enable(enable);
-    m_wtb3200Btn->Enable(enable);
-    m_wtb5600Btn->Enable(enable);
-    m_wtbRed->Enable(enable);
-    m_wtbBlue->Enable(enable);
-  }
+    m_toolBar->EnableTool(ID_DSO, enable);
+    m_toolBar->EnableTool(ID_PLANET, enable);
+    m_toolBar->EnableTool(ID_LUNAR, enable);
+    m_toolBar->EnableTool(ID_SOLAR, enable);
+    m_toolBar->EnableTool(ID_LOAD, enable);
+    m_toolBar->EnableTool(ID_SAVE, enable);
+    m_toolBar->EnableTool(ID_CROSS_BOX, enable);
+    m_toolBar->EnableTool(ID_COLOR_BARS, enable);
+    m_toolBar->EnableTool(ID_H_REV, enable);
+    m_toolBar->EnableTool(ID_V_REV, enable);
+    m_toolBar->EnableTool(ID_NEGATIVE, enable);
+    m_toolBar->EnableTool(ID_CCD_MODE, enable);
+    m_toolBar->EnableTool(ID_SLEEP, enable);
 
-  if (enable) {
-    doEnablesForSenseUp();
-    doEnablesForWtb();
-  }
+    if (!for_int) {
+        m_int->Enable(enable);
+        m_intBtn->Enable(enable);
+        m_gamma->Enable(enable);
+        m_apcH->Enable(enable);
+        m_apcV->Enable(enable);
+        m_toolBar->EnableTool(ID_FREEZE, enable);
+        m_atwBtn->Enable(enable);
+        m_awcBtn->Enable(enable);
+        m_awcSet->Enable(enable);
+        m_wtbRbBtn->Enable(enable);
+        m_wtb3200Btn->Enable(enable);
+        m_wtb5600Btn->Enable(enable);
+        m_wtbRed->Enable(enable);
+        m_wtbBlue->Enable(enable);
+    }
 
-  //  m_toolBar->Enable(enable);
+#if defined(__WXMSW__) // workaround
+    m_atwBtn->SetValue(v1);
+    m_awcBtn->SetValue(v2);
+    m_wtbRbBtn->SetValue(v3);
+    m_wtb3200Btn->SetValue(v4);
+    m_wtb5600Btn->SetValue(v5);
+#endif
+
+    if (enable) {
+        doEnablesForSenseUp();
+        doEnablesForWtb();
+    }
 }
 
 static void

@@ -125,11 +125,11 @@
                 <property name="name">bSizer25</property>
                 <property name="orient">wxVERTICAL</property>
                 <property name="permission">none</property>
-                <object class="sizeritem" expanded="1">
+                <object class="sizeritem" expanded="0">
                     <property name="border">5</property>
                     <property name="flag">wxEXPAND</property>
                     <property name="proportion">0</property>
-                    <object class="wxToolBar" expanded="1">
+                    <object class="wxToolBar" expanded="0">
                         <property name="BottomDockable">1</property>
                         <property name="LeftDockable">1</property>
                         <property name="RightDockable">1</property>
@@ -275,7 +275,7 @@
                             <event name="OnToolRClicked"></event>
                             <event name="OnUpdateUI"></event>
                         </object>
-                        <object class="tool" expanded="1">
+                        <object class="tool" expanded="0">
                             <property name="bitmap">Load From Embedded File; C:\MinGW\msys\1.0\home\agalasso\proj\mcx\gui\solar.xpm</property>
                             <property name="context_menu">0</property>
                             <property name="id">ID_SOLAR</property>
@@ -533,11 +533,11 @@
                         <property name="width">0</property>
                     </object>
                 </object>
-                <object class="sizeritem" expanded="1">
+                <object class="sizeritem" expanded="0">
                     <property name="border">5</property>
-                    <property name="flag">wxEXPAND</property>
-                    <property name="proportion">1</property>
-                    <object class="wxGridBagSizer" expanded="1">
+                    <property name="flag">wxFIXED_MINSIZE</property>
+                    <property name="proportion">0</property>
+                    <object class="wxGridBagSizer" expanded="0">
                         <property name="empty_cell_size"></property>
                         <property name="flexible_direction">wxBOTH</property>
                         <property name="growablecols"></property>
@@ -793,7 +793,7 @@
                                         <property name="maximum_size"></property>
                                         <property name="min_size"></property>
                                         <property name="minimize_button">0</property>
-                                        <property name="minimum_size"></property>
+                                        <property name="minimum_size">20,-1</property>
                                         <property name="moveable">1</property>
                                         <property name="name">m_senseUpVal</property>
                                         <property name="pane_border">1</property>
@@ -1101,7 +1101,7 @@
                                                 <property name="maximum_size"></property>
                                                 <property name="min_size"></property>
                                                 <property name="minimize_button">0</property>
-                                                <property name="minimum_size"></property>
+                                                <property name="minimum_size">20,-1</property>
                                                 <property name="moveable">1</property>
                                                 <property name="name">m_alcVal</property>
                                                 <property name="pane_border">1</property>
@@ -1394,7 +1394,7 @@
                                                 <property name="maximum_size"></property>
                                                 <property name="min_size"></property>
                                                 <property name="minimize_button">0</property>
-                                                <property name="minimum_size"></property>
+                                                <property name="minimum_size">20,-1</property>
                                                 <property name="moveable">1</property>
                                                 <property name="name">m_elcVal</property>
                                                 <property name="pane_border">1</property>
@@ -1447,14 +1447,14 @@
                                 </object>
                             </object>
                         </object>
-                        <object class="gbsizeritem" expanded="1">
+                        <object class="gbsizeritem" expanded="0">
                             <property name="border">5</property>
                             <property name="colspan">1</property>
                             <property name="column">1</property>
                             <property name="flag">wxEXPAND</property>
                             <property name="row">0</property>
                             <property name="rowspan">1</property>
-                            <object class="wxStaticBoxSizer" expanded="1">
+                            <object class="wxStaticBoxSizer" expanded="0">
                                 <property name="id">wxID_ANY</property>
                                 <property name="label">Integration</property>
                                 <property name="minimum_size"></property>
@@ -1900,7 +1900,7 @@
                                                 <property name="maximum_size"></property>
                                                 <property name="min_size"></property>
                                                 <property name="minimize_button">0</property>
-                                                <property name="minimum_size"></property>
+                                                <property name="minimum_size">20,-1</property>
                                                 <property name="moveable">1</property>
                                                 <property name="name">m_agcManVal</property>
                                                 <property name="pane_border">1</property>
@@ -1922,7 +1922,7 @@
                                                 <property name="validator_variable"></property>
                                                 <property name="window_extra_style"></property>
                                                 <property name="window_name"></property>
-                                                <property name="window_style"></property>
+                                                <property name="window_style">wxSIMPLE_BORDER</property>
                                                 <property name="wrap">-1</property>
                                                 <event name="OnChar"></event>
                                                 <event name="OnEnterWindow"></event>
@@ -2193,7 +2193,7 @@
                                                 <property name="maximum_size"></property>
                                                 <property name="min_size"></property>
                                                 <property name="minimize_button">0</property>
-                                                <property name="minimum_size"></property>
+                                                <property name="minimum_size">20,-1</property>
                                                 <property name="moveable">1</property>
                                                 <property name="name">m_agcAutoVal</property>
                                                 <property name="pane_border">1</property>
@@ -2215,7 +2215,7 @@
                                                 <property name="validator_variable"></property>
                                                 <property name="window_extra_style"></property>
                                                 <property name="window_name"></property>
-                                                <property name="window_style"></property>
+                                                <property name="window_style">wxSIMPLE_BORDER</property>
                                                 <property name="wrap">-1</property>
                                                 <event name="OnChar"></event>
                                                 <event name="OnEnterWindow"></event>
@@ -2939,7 +2939,7 @@
                                                         <property name="resize">Resizable</property>
                                                         <property name="show">1</property>
                                                         <property name="size"></property>
-                                                        <property name="style">wxRB_GROUP</property>
+                                                        <property name="style">wxRB_SINGLE</property>
                                                         <property name="subclass"></property>
                                                         <property name="toolbar_pane">0</property>
                                                         <property name="tooltip"></property>
@@ -3038,7 +3038,7 @@
                                                         <property name="resize">Resizable</property>
                                                         <property name="show">1</property>
                                                         <property name="size"></property>
-                                                        <property name="style"></property>
+                                                        <property name="style">wxRB_SINGLE</property>
                                                         <property name="subclass"></property>
                                                         <property name="toolbar_pane">0</property>
                                                         <property name="tooltip"></property>
@@ -3312,7 +3312,7 @@
                                                         <property name="resize">Resizable</property>
                                                         <property name="show">1</property>
                                                         <property name="size"></property>
-                                                        <property name="style"></property>
+                                                        <property name="style">wxRB_SINGLE</property>
                                                         <property name="subclass"></property>
                                                         <property name="toolbar_pane">0</property>
                                                         <property name="tooltip"></property>
@@ -3400,7 +3400,7 @@
                                                         <property name="resize">Resizable</property>
                                                         <property name="show">1</property>
                                                         <property name="size"></property>
-                                                        <property name="style"></property>
+                                                        <property name="style">wxRB_SINGLE</property>
                                                         <property name="subclass"></property>
                                                         <property name="toolbar_pane">0</property>
                                                         <property name="tooltip"></property>
@@ -3488,7 +3488,7 @@
                                                         <property name="resize">Resizable</property>
                                                         <property name="show">1</property>
                                                         <property name="size"></property>
-                                                        <property name="style"></property>
+                                                        <property name="style">wxRB_SINGLE</property>
                                                         <property name="subclass"></property>
                                                         <property name="toolbar_pane">0</property>
                                                         <property name="tooltip"></property>
@@ -4406,7 +4406,7 @@
                                                 <property name="maximum_size"></property>
                                                 <property name="min_size"></property>
                                                 <property name="minimize_button">0</property>
-                                                <property name="minimum_size">30,-1</property>
+                                                <property name="minimum_size">20,-1</property>
                                                 <property name="moveable">1</property>
                                                 <property name="name">m_tecLevelVal</property>
                                                 <property name="pane_border">1</property>
@@ -5006,7 +5006,7 @@
                                                 <property name="maximum_size"></property>
                                                 <property name="min_size"></property>
                                                 <property name="minimize_button">0</property>
-                                                <property name="minimum_size"></property>
+                                                <property name="minimum_size">30,-1</property>
                                                 <property name="moveable">1</property>
                                                 <property name="name">m_gammaVal</property>
                                                 <property name="pane_border">1</property>
@@ -5299,7 +5299,7 @@
                                                 <property name="maximum_size"></property>
                                                 <property name="min_size"></property>
                                                 <property name="minimize_button">0</property>
-                                                <property name="minimum_size">-1,-1</property>
+                                                <property name="minimum_size">20,-1</property>
                                                 <property name="moveable">1</property>
                                                 <property name="name">m_zoomVal</property>
                                                 <property name="pane_border">1</property>
@@ -5478,7 +5478,7 @@
                                                 <property name="gripper">0</property>
                                                 <property name="hidden">0</property>
                                                 <property name="id">wxID_ANY</property>
-                                                <property name="maxValue">8</property>
+                                                <property name="maxValue">18</property>
                                                 <property name="max_size"></property>
                                                 <property name="maximize_button">0</property>
                                                 <property name="maximum_size"></property>
@@ -5592,7 +5592,7 @@
                                                 <property name="maximum_size"></property>
                                                 <property name="min_size"></property>
                                                 <property name="minimize_button">0</property>
-                                                <property name="minimum_size"></property>
+                                                <property name="minimum_size">20,-1</property>
                                                 <property name="moveable">1</property>
                                                 <property name="name">m_coronagraphVal</property>
                                                 <property name="pane_border">1</property>
@@ -6487,7 +6487,7 @@
                 </object>
                 <object class="sizeritem" expanded="0">
                     <property name="border">5</property>
-                    <property name="flag">wxFIXED_MINSIZE</property>
+                    <property name="flag"></property>
                     <property name="proportion">0</property>
                     <object class="spacer" expanded="0">
                         <property name="height">30</property>

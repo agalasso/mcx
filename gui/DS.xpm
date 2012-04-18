@@ -1,5 +1,5 @@
 /* XPM */
-static char * DS_xpm[] = {
+static const char * DS_xpm[] = {
 "32 32 364 2",
 "  	c #0F0F11",
 ". 	c #121214",

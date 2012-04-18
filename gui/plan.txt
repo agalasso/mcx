@@ -1,3 +1,64 @@
+TODO
+  at startup, start agc timer if needed
+  about box
+  bug: slide to 128x, immediately start integration
+  logging
+  installer - win
+  installer - linux
+  resolve COMMAND_DELAY_MS vs INT_CAPTURE_DELAY_MS
+  blc
+  disable controls disable labels to make more obvious?
+  top button functions:
+      load/save/presets
+      ccd mode: agc off, apc off
+      sleep camera:
+         TEC noise detect on (full area selected), level=8
+         wait 60 SEC
+  load/save camera preset
+     0x1e   "Exit item, SAVE setting"
+     0x20,0 "Exit item, PRESET setting"
+  app icon and window title TopLevelWindow->SetIcon
+  resend mcx message if not acked?
+  accept varios integration time formats  2m 2:30 2.5m
+  better countdown timer status message format
+  title pos buttons
+  send empty title (not just turn off); or, send new title before title on
+
+done:
+  fix window height
+  config window (comm port, anything else?)
+  rock re ALC/ELC and sensup mutually exclusive?
+  bug: disable controls sometimes selects 5600k
+  tec on send full area
+  force fixed statings at startup:
+     full tec area
+     masks
+     sync=int
+ agc timer for 128x
+ button for solar
+ sensup >0 => force alc/elc off
+ save full mask, not just mask type
+ get rid of cross hairs
+ toggle cross bars selected when read cam settings and find mask enabled
+ disable/enable radio btns is sensing selected events and sending camera commands - not a problem
+ int not writeble? - ok, if call Skip
+ camera comm for windows
+ fix toolbar background
+ git
+ 3 minute agc change timer, + how to cancel it?
+ integration fsm
+ crash when integrating hit exit
+ staus messages for reading camera state, maybe even a progress bar
+   general status
+        connecting, sending, integrating
+
+
+
+
+
+
+
+
 camera states: current, requested
 
 

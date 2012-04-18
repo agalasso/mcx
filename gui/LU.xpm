@@ -1,5 +1,5 @@
 /* XPM */
-static char * LU_xpm[] = {
+static const char * LU_xpm[] = {
 "32 32 445 2",
 "  	c #000000",
 ". 	c #010101",

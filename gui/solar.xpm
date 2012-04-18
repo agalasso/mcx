@@ -1,5 +1,5 @@
 /* XPM */
-static char *solar_xpm[] = {
+static const char *solar_xpm[] = {
 /* columns rows colors chars-per-pixel */
 "32 32 189 2",
 "   c #040001",

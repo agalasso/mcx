@@ -1,5 +1,5 @@
 /* XPM */
-static char * ng_xpm[] = {
+static const char * ng_xpm[] = {
 "32 32 365 2",
 "  	c #F0F0EE",
 ". 	c #ECECEA",

@@ -1,5 +1,5 @@
 /* XPM */
-static char * Ld_xpm[] = {
+static const char * Ld_xpm[] = {
 "32 32 451 2",
 "  	c #FFFFFF",
 ". 	c #FEFEFE",

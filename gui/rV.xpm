@@ -1,5 +1,5 @@
 /* XPM */
-static char * rV_xpm[] = {
+static const char * rV_xpm[] = {
 "32 32 57 1",
 " 	c #FFFFFF",
 ".	c #FDFDFD",

@@ -86,6 +86,6 @@ mcxcomm_recv(msg *msg, unsigned int timeout_ms, bool *err)
     bool ok = _get(msg);
     if (ok)
         return ok;
-    wxMilliSleep(timeout_ms / 2);
+    wxMilliSleep(timeout_ms / 4);
     return _get(msg);
 }

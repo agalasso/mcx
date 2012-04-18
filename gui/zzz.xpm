@@ -1,5 +1,5 @@
 /* XPM */
-static char * zzz_xpm[] = {
+static const char * zzz_xpm[] = {
 "32 32 149 2",
 "  	c #FFFFFF",
 ". 	c #FEFEFE",
