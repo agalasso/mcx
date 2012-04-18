@@ -387,7 +387,7 @@ __load_cam(Camera *cam, const char *filename)
 	// strip trailing whitespace (including line separator)
 	char *p = &buf[n - 1];
 	while (p >= &buf[0] && isspace(*p))
-	    *p = 0;
+	    *p-- = 0;
 
 	if (linenr == 1) {
 	    if (strcmp(buf, FIRSTLINE) != 0)
@@ -2698,12 +2698,12 @@ MainFrameD::InitControls(Camera *cam)
 void
 MainFrameD::atwSelected(wxCommandEvent& event)
 {
-//wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_atwBtn->GetValue(),m_atwBtn->IsEnabled());
+wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_atwBtn->GetValue(),m_atwBtn->IsEnabled());
 
-    m_awcBtn->SetValue(false);
-    m_wtbRbBtn->SetValue(false);
-    m_wtb3200Btn->SetValue(false);
-    m_wtb5600Btn->SetValue(false);
+//    m_awcBtn->SetValue(false);
+//    m_wtbRbBtn->SetValue(false);
+//    m_wtb3200Btn->SetValue(false);
+//    m_wtb5600Btn->SetValue(false);
 
     doEnablesForWtb();
     s_cam1.wtb = 0; // atw
@@ -2713,12 +2713,12 @@ MainFrameD::atwSelected(wxCommandEvent& event)
 void
 MainFrameD::awcSelected(wxCommandEvent& event)
 {
-//wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_awcBtn->GetValue(),m_awcBtn->IsEnabled());
+wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_awcBtn->GetValue(),m_awcBtn->IsEnabled());
 
-    m_atwBtn->SetValue(false);
-    m_wtbRbBtn->SetValue(false);
-    m_wtb3200Btn->SetValue(false);
-    m_wtb5600Btn->SetValue(false);
+//    m_atwBtn->SetValue(false);
+//    m_wtbRbBtn->SetValue(false);
+//    m_wtb3200Btn->SetValue(false);
+//    m_wtb5600Btn->SetValue(false);
 
     doEnablesForWtb();
     s_cam1.wtb = 1; // awc
@@ -2728,12 +2728,12 @@ MainFrameD::awcSelected(wxCommandEvent& event)
 void
 MainFrameD::wtbRBSelected(wxCommandEvent& event)
 {
-//wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtbRbBtn->GetValue(),m_wtbRbBtn->IsEnabled());
+wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtbRbBtn->GetValue(),m_wtbRbBtn->IsEnabled());
 
-    m_atwBtn->SetValue(false);
-    m_awcBtn->SetValue(false);
-    m_wtb3200Btn->SetValue(false);
-    m_wtb5600Btn->SetValue(false);
+//    m_atwBtn->SetValue(false);
+//    m_awcBtn->SetValue(false);
+//    m_wtb3200Btn->SetValue(false);
+//    m_wtb5600Btn->SetValue(false);
 
     doEnablesForWtb();
     s_cam1.wtb = 2; // manual
@@ -2744,12 +2744,12 @@ MainFrameD::wtbRBSelected(wxCommandEvent& event)
 void
 MainFrameD::wtb3200Selected(wxCommandEvent& event)
 {
-//wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtb3200Btn->GetValue(),m_wtb3200Btn->IsEnabled());
+wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtb3200Btn->GetValue(),m_wtb3200Btn->IsEnabled());
 
-    m_atwBtn->SetValue(false);
-    m_awcBtn->SetValue(false);
-    m_wtbRbBtn->SetValue(false);
-    m_wtb5600Btn->SetValue(false);
+//    m_atwBtn->SetValue(false);
+//    m_awcBtn->SetValue(false);
+//    m_wtbRbBtn->SetValue(false);
+//    m_wtb5600Btn->SetValue(false);
 
     doEnablesForWtb();
     s_cam1.wtb = 2; // manual
@@ -2760,12 +2760,12 @@ MainFrameD::wtb3200Selected(wxCommandEvent& event)
 void
 MainFrameD::wtb5600Selected(wxCommandEvent& event)
 {
-//wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtb5600Btn->GetValue(),m_wtb5600Btn->IsEnabled());
+wxLogDebug("%s %d %d %d %d",__FUNCTION__,event.IsChecked(), event.IsSelection(),m_wtb5600Btn->GetValue(),m_wtb5600Btn->IsEnabled());
 
-    m_atwBtn->SetValue(false);
-    m_awcBtn->SetValue(false);
-    m_wtbRbBtn->SetValue(false);
-    m_wtb3200Btn->SetValue(false);
+//    m_atwBtn->SetValue(false);
+//    m_awcBtn->SetValue(false);
+//    m_wtbRbBtn->SetValue(false);
+//    m_wtb3200Btn->SetValue(false);
 
     doEnablesForWtb();
     s_cam1.wtb = 2; // manual

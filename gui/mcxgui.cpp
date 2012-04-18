@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Feb  9 2012)
+// C++ code generated with wxFormBuilder (version Feb 13 2012)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -285,7 +285,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer18;
 	bSizer18 = new wxBoxSizer( wxVERTICAL );
 	
-	m_atwBtn = new wxRadioButton( this, wxID_ANY, wxT("ATW"), wxDefaultPosition, wxDefaultSize, wxRB_SINGLE );
+	m_atwBtn = new wxRadioButton( this, wxID_ANY, wxT("ATW"), wxDefaultPosition, wxDefaultSize, wxRB_GROUP );
 	bSizer18->Add( m_atwBtn, 0, wxALL, 5 );
 	
 	
@@ -294,7 +294,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer20;
 	bSizer20 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_awcBtn = new wxRadioButton( this, wxID_ANY, wxT("AWC"), wxDefaultPosition, wxDefaultSize, wxRB_SINGLE );
+	m_awcBtn = new wxRadioButton( this, wxID_ANY, wxT("AWC"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer20->Add( m_awcBtn, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_awcSet = new wxButton( this, wxID_ANY, wxT("Set"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -313,13 +313,13 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	m_staticText16->Wrap( -1 );
 	bSizer21->Add( m_staticText16, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_wtbRbBtn = new wxRadioButton( this, wxID_ANY, wxT("R/B"), wxDefaultPosition, wxDefaultSize, wxRB_SINGLE );
+	m_wtbRbBtn = new wxRadioButton( this, wxID_ANY, wxT("R/B"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer21->Add( m_wtbRbBtn, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_wtb3200Btn = new wxRadioButton( this, wxID_ANY, wxT("3200K"), wxDefaultPosition, wxDefaultSize, wxRB_SINGLE );
+	m_wtb3200Btn = new wxRadioButton( this, wxID_ANY, wxT("3200K"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer21->Add( m_wtb3200Btn, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_wtb5600Btn = new wxRadioButton( this, wxID_ANY, wxT("5600K"), wxDefaultPosition, wxDefaultSize, wxRB_SINGLE );
+	m_wtb5600Btn = new wxRadioButton( this, wxID_ANY, wxT("5600K"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer21->Add( m_wtb5600Btn, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	
