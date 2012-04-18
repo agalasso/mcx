@@ -1,15 +1,14 @@
 TODO
-  at startup, start agc timer if needed
   about box
+  at startup, start agc timer if needed
   bug: slide to 128x, immediately start integration
   logging
   installer - win
   installer - linux
-  resolve COMMAND_DELAY_MS vs INT_CAPTURE_DELAY_MS
+  resolve COMMAND_DELAY_MS vs INT_CAPTURE_DELAY_MS - test it
   blc
   disable controls disable labels to make more obvious?
   top button functions:
-      load/save/presets
       ccd mode: agc off, apc off
       sleep camera:
          TEC noise detect on (full area selected), level=8
@@ -25,6 +24,7 @@ TODO
   send empty title (not just turn off); or, send new title before title on
 
 done:
+  load/save/presets
   fix window height
   config window (comm port, anything else?)
   rock re ALC/ELC and sensup mutually exclusive?

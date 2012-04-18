@@ -2785,7 +2785,7 @@ _load_cam(const char *filename)
 {
     Camera cam;
     bool ok = __load_cam(&cam, filename);
-    wxLogDebug("loaded ok=%d", ok);
+    wxLogDebug("loaded %s ok=%d", filename, ok);
     if (ok) {
         _init_fixed_vals(&cam);
 	s_cam1 = cam;
@@ -2830,19 +2830,40 @@ MainFrameD::solarClicked(wxCommandEvent& event)
 void
 MainFrameD::ldClicked(wxCommandEvent& event)
 {
-  wxLogDebug("%s", __FUNCTION__);
-  // todo
-  _load_cam("my.mcx");
-  // todo: update ctrls
+    wxFileDialog *fd = new wxFileDialog(this,
+					"Choose a file",
+					"", // current directory
+					"", // default file
+					"MCX Files (*.mcx)|*.mcx", // wildcard
+					wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+
+    if (fd->ShowModal() == wxID_OK) {
+	wxString path = fd->GetPath();
+	_load_cam(path.c_str());
+    }
+
+    delete fd;
 }
 
 void
 MainFrameD::svClicked(wxCommandEvent& event)
 {
-  wxLogDebug("%s", __FUNCTION__);
-  // todo
-  bool ok = _save_cam("my.mcx", &s_cam1);
-  wxLogDebug("saved ok=%d", ok);
+    wxLogDebug("%s", __FUNCTION__);
+
+    wxFileDialog *fd = new wxFileDialog(this,
+					"Choose a file",
+					"", // current directory
+					"", // default file
+					"MCX Files (*.mcx)|*.mcx", // wildcard
+					wxFD_SAVE);
+
+    if (fd->ShowModal() == wxID_OK) {
+	wxString path = fd->GetPath();
+	bool ok = _save_cam(path.c_str(), &s_cam1);
+	wxLogDebug("saved %s ok=%d", path.c_str().AsChar(), ok);
+    }
+
+    delete fd;
 }
 
 void
