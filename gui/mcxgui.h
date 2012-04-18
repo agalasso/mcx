@@ -32,6 +32,8 @@
 #include <wx/gbsizer.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
+#include <wx/html/htmlwin.h>
+#include <wx/dialog.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -58,7 +60,8 @@ class MainFrame : public wxFrame
 			ID_NEGATIVE,
 			ID_FREEZE,
 			ID_CCD_MODE,
-			ID_SLEEP
+			ID_SLEEP,
+			ID_ABOUT
 		};
 		
 		wxToolBar* m_toolBar;
@@ -95,7 +98,6 @@ class MainFrame : public wxFrame
 		wxSlider* m_wtbBlue;
 		wxStaticText* m_wtbBlueVal;
 		wxStaticText* m_staticText21;
-		wxSlider* m_tecLevel;
 		wxStaticText* m_tecLevelVal;
 		wxStaticText* m_staticText23;
 		wxSlider* m_dewRemoval;
@@ -132,6 +134,7 @@ class MainFrame : public wxFrame
 		virtual void fzClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void ccClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void sleepClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void AboutClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void senseUpScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void alcScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void elcScroll( wxScrollEvent& event ) { event.Skip(); }
@@ -165,12 +168,30 @@ class MainFrame : public wxFrame
 		wxComboBox* m_int;
 		wxButton* m_intBtn;
 		wxSlider* m_agcMan;
+		wxSlider* m_tecLevel;
 		wxChoice* m_port;
 		wxStatusBar* m_statusBar;
 		
 		MainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Mallincam Control"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 		
 		~MainFrame();
+	
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class AboutDialog
+///////////////////////////////////////////////////////////////////////////////
+class AboutDialog : public wxDialog 
+{
+	private:
+	
+	protected:
+	
+	public:
+		wxHtmlWindow* m_html;
+		
+		AboutDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("About Mallincam Control"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxCLOSE_BOX|wxDEFAULT_DIALOG_STYLE ); 
+		~AboutDialog();
 	
 };
 

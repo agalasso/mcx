@@ -57,7 +57,10 @@ enum {
   COMMAND_DELAY_MS = 175,
   INT_CAPTURE_DELAY_MS = 175,
 
-  AGC_WAIT_MS = 3 * 60 * 1000, // how long to wait after agc change
+  MINUTES = 60 * 1000,
+
+  AGC_WAIT_MS = 3 * MINUTES, // how long to wait after agc change
+  PARK_WAIT_MS = 1 * MINUTES, // how long to wait to shutdown camera
 };
 
 enum CameraState {
@@ -92,6 +95,10 @@ enum AgcState {
   AGC_WAIT1,
   AGC_WAIT2,
   AGC_CLEANUP,
+  // park camera states
+  AGC_PARK_INIT,
+  AGC_PARK_WAIT,
+  AGC_PARK_DONE,
 };
 
 class ReaderThread;
@@ -1126,6 +1133,7 @@ public:
     void fzClicked(wxCommandEvent& event);
     void ccClicked(wxCommandEvent& event);
     void sleepClicked(wxCommandEvent& event);
+    void AboutClicked(wxCommandEvent& event);
     void statusBarLeftUp(wxMouseEvent& event);
 
     void OnTimer(wxTimerEvent& event);
@@ -1903,18 +1911,31 @@ wxLogDebug("SENDAGC agc %u=>%u %u=>%u %u=>%u",s_cam0.agc,s_cam1.agc,s_cam0.agcMa
 }
 
 static void
+_waitmsg(char *buf, size_t len, const char *prefix, unsigned int elapsed, unsigned int total)
+{
+    unsigned int rem = total - elapsed;
+    snprintf(buf, len, "%s %2u / %2u REM = %2u  Click here to Cancel",
+	     prefix, elapsed, total, rem);
+}
+
+static void
+_timer_status(const char *prefix, long elapsed_ms, unsigned long total_ms)
+{
+    if (elapsed_ms == -1)
+	status("");
+    else {
+	unsigned int total = (unsigned int) (total_ms / 1000);
+	unsigned int e = elapsed_ms / 1000;
+	char buf[80];
+	_waitmsg(buf, sizeof(buf), prefix, e, total);
+	status(buf);
+    }
+}
+
+static void
 _update_agc_status(long elapsed)
 {
-  if (elapsed == -1)
-    status("");
-  else {
-    unsigned int total = (unsigned int) (AGC_WAIT_MS / 1000);
-    unsigned int e = elapsed / 1000;
-    unsigned int rem = total - e;
-    char buf[80];
-    snprintf(buf, sizeof(buf), "AGC Stablizing %2u / %2u REM = %2u  Click here to Cancel", e, total, rem);
-    status(buf);
-  }
+    _timer_status("AGC Stabilizing", elapsed, AGC_WAIT_MS);
 }
 
 static void
@@ -1982,6 +2003,59 @@ _agc_cleanup(bool *done)
 }
 
 static void
+_update_park_status(long elapsed)
+{
+    _timer_status("Parking Camera", elapsed, PARK_WAIT_MS);
+}
+
+static void
+_agc_park_init(bool *done)
+{
+    // tec noise detect to full
+    {
+	MainFrameD *const win = _win();
+        win->m_tecLevel->SetValue(8 + 1);
+        wxScrollEvent ev(wxEVT_SCROLL_TOP);
+        win->m_tecLevel->GetEventHandler()->ProcessEvent(ev);
+    }
+
+    _enable_controls(EN_DISABLE);
+    _update_park_status(0);
+    s_agc_wait_cancel_clicked = false;
+    s_agc_stopwatch->Start();
+    s_agc_timer->Start(500, wxTIMER_CONTINUOUS);
+    s_agc_wait_state = AGC_PARK_WAIT;
+    *done = true;
+}
+
+static void
+_agc_park_wait(bool *done)
+{
+    if (s_agc_wait_cancel_clicked)
+	s_agc_wait_state = AGC_CLEANUP;
+    else {
+        long elapsed = s_agc_stopwatch->Time();
+        _update_park_status(elapsed);
+        if (elapsed >= PARK_WAIT_MS) {
+	    s_agc_timer->Stop();
+	    status("OK to power off camera, or click here to resume");
+            s_agc_wait_state = AGC_PARK_DONE;
+	}
+        else
+            *done = true;
+    }
+}
+
+static void
+_agc_park_done(bool *done)
+{
+    if (s_agc_wait_cancel_clicked)
+	s_agc_wait_state = AGC_CLEANUP;
+    else
+	*done = true;
+}
+
+static void
 _do_agc_wait_fsm()
 {
   bool done = false;
@@ -1994,6 +2068,9 @@ _do_agc_wait_fsm()
     case AGC_WAIT1:            _agc_wait1(&done);             break;
     case AGC_WAIT2:            _agc_wait2(&done);             break;
     case AGC_CLEANUP:          _agc_cleanup(&done);           break;
+    case AGC_PARK_INIT:        _agc_park_init(&done);         break;
+    case AGC_PARK_WAIT:        _agc_park_wait(&done);         break;
+    case AGC_PARK_DONE:        _agc_park_done(&done);         break;
     default:
       wxASSERT(false);
       done = true;
@@ -2471,7 +2548,9 @@ MainFrameD::tecLevelScroll(wxScrollEvent& event)
 
   int const val[] = { -1, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
 
-  int const p = event.GetPosition();
+  // do not use event.GetPosition() since we send fake events to this
+  // control
+  int const p = m_tecLevel->GetValue();
   wxASSERT(p >= 0 && p < lengthof(val));
 
   if (p == 0) {
@@ -2953,7 +3032,19 @@ void
 MainFrameD::sleepClicked(wxCommandEvent& event)
 {
     wxLogDebug("%s id=%d", __FUNCTION__, event.GetId());
-    // todo
+
+    s_agc_wait_state = AGC_PARK_INIT;
+    _do_camera_fsm();
+}
+
+void
+MainFrameD::AboutClicked(wxCommandEvent& event)
+{
+    wxLogDebug("%s id=%d", __FUNCTION__, event.GetId());
+
+    wxDialog *dlg = new AboutDialog(this);
+    dlg->ShowModal();
+    delete dlg;
 }
 
 void

@@ -16,6 +16,7 @@
 #include "Sv.xpm"
 #include "XB.xpm"
 #include "cc.xpm"
+#include "info.xpm"
 #include "ng.xpm"
 #include "rH.xpm"
 #include "rV.xpm"
@@ -72,6 +73,10 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	m_toolBar->AddSeparator(); 
 	
 	m_toolBar->AddTool( ID_SLEEP, wxT("tool"), wxBitmap( zzz_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Shutdown camera"), wxT("Shutdown camera"), NULL ); 
+	
+	m_toolBar->AddSeparator(); 
+	
+	m_toolBar->AddTool( ID_ABOUT, wxT("About"), wxBitmap( info_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("About Mallincam control"), wxT("About Mallincam control"), NULL ); 
 	
 	m_toolBar->Realize(); 
 	
@@ -628,6 +633,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	this->Connect( ID_FREEZE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::fzClicked ) );
 	this->Connect( ID_CCD_MODE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ccClicked ) );
 	this->Connect( ID_SLEEP, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::sleepClicked ) );
+	this->Connect( ID_ABOUT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::AboutClicked ) );
 	m_senseUp->Connect( wxEVT_SCROLL_TOP, wxScrollEventHandler( MainFrame::senseUpScroll ), NULL, this );
 	m_senseUp->Connect( wxEVT_SCROLL_BOTTOM, wxScrollEventHandler( MainFrame::senseUpScroll ), NULL, this );
 	m_senseUp->Connect( wxEVT_SCROLL_LINEUP, wxScrollEventHandler( MainFrame::senseUpScroll ), NULL, this );
@@ -785,6 +791,7 @@ MainFrame::~MainFrame()
 	this->Disconnect( ID_FREEZE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::fzClicked ) );
 	this->Disconnect( ID_CCD_MODE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ccClicked ) );
 	this->Disconnect( ID_SLEEP, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::sleepClicked ) );
+	this->Disconnect( ID_ABOUT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::AboutClicked ) );
 	m_senseUp->Disconnect( wxEVT_SCROLL_TOP, wxScrollEventHandler( MainFrame::senseUpScroll ), NULL, this );
 	m_senseUp->Disconnect( wxEVT_SCROLL_BOTTOM, wxScrollEventHandler( MainFrame::senseUpScroll ), NULL, this );
 	m_senseUp->Disconnect( wxEVT_SCROLL_LINEUP, wxScrollEventHandler( MainFrame::senseUpScroll ), NULL, this );
@@ -924,4 +931,26 @@ MainFrame::~MainFrame()
 	m_title->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( MainFrame::titleText ), NULL, this );
 	m_statusBar->Disconnect( wxEVT_LEFT_UP, wxMouseEventHandler( MainFrame::statusBarLeftUp ), NULL, this );
 	
+}
+
+AboutDialog::AboutDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+	
+	wxBoxSizer* bSizer26;
+	bSizer26 = new wxBoxSizer( wxVERTICAL );
+	
+	m_html = new wxHtmlWindow( this, wxID_ANY, wxDefaultPosition, wxSize( 400,300 ), 0 );
+	bSizer26->Add( m_html, 0, wxALL, 5 );
+	
+	
+	this->SetSizer( bSizer26 );
+	this->Layout();
+	bSizer26->Fit( this );
+	
+	this->Centre( wxBOTH );
+}
+
+AboutDialog::~AboutDialog()
+{
 }

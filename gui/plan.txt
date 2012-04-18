@@ -8,14 +8,9 @@ TODO
   resolve COMMAND_DELAY_MS vs INT_CAPTURE_DELAY_MS - test it
   blc
   disable controls disable labels to make more obvious?
-  top button functions:
-      sleep camera:
-         TEC noise detect on (full area selected), level=8
-         wait 60 SEC
   load/save camera preset
      0x1e   "Exit item, SAVE setting"
      0x20,0 "Exit item, PRESET setting"
-  app icon and window title TopLevelWindow->SetIcon
   resend mcx message if not acked?
   accept varios integration time formats  2m 2:30 2.5m
   better countdown timer status message format
@@ -23,6 +18,7 @@ TODO
   send empty title (not just turn off); or, send new title before title on
 
 done:
+  sleep camera
   ccd mode: agc off, apc off
   load/save/presets
   fix window height
@@ -35,6 +31,7 @@ done:
      masks
      sync=int
  agc timer for 128x
+ app icon and window title TopLevelWindow->SetIcon
  button for solar
  sensup >0 => force alc/elc off
  save full mask, not just mask type
