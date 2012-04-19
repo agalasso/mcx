@@ -137,16 +137,30 @@ static void _dnotify();
 static void dnotify(int when);
 
 enum UpdateWhen {
-  UPD_IMMEDIATE,
-  UPD_DEFER,
+    UPD_IMMEDIATE,
+    UPD_DEFER,
 };
 
 struct Config
 {
-  wxString cfg_serial_port;
+    unsigned int cfg_serial_port;
 };
 static wxMutex *s_cfg_lock;
 static Config s_cfg;
+
+static unsigned int
+_cfg_get_port()
+{
+    wxMutexLocker _l(*s_cfg_lock);
+    return s_cfg.cfg_serial_port;
+}
+
+static void
+_cfg_set_port(unsigned int port_nr)
+{
+    wxMutexLocker _l(*s_cfg_lock);
+    s_cfg.cfg_serial_port = port_nr;
+}
 
 // regs:
 //   0x10,0: title on/off 0=off 1=on
@@ -1000,11 +1014,27 @@ struct McxMsgEvent : public wxNotifyEvent
   wxEvent *Clone(void) const { return new McxMsgEvent(*this); }
 };
 
+static wxString
+_port_name(unsigned int port_nr)
+{
+    char buf[16];
+    sprintf(buf, "COM%u", port_nr);
+    return wxString(buf);
+}
+
+static unsigned int
+_port_nr(const wxString& s)
+{
+    const char *p = s.c_str();
+    return atoi(p + 3);
+}
+
 struct ReaderThread
   : public wxThread
 {
     wxEvtHandler *m_evt_handler;
     volatile bool m_terminated;
+    unsigned int m_port;
 
     ReaderThread(wxEvtHandler *evt_handler)
         : wxThread(wxTHREAD_JOINABLE), m_evt_handler(evt_handler), m_terminated(false) { }
@@ -1015,27 +1045,22 @@ struct ReaderThread
 bool
 ReaderThread::Connect()
 {
-    wxString last_port;
-
     while (true) {
-        wxString port;
-
-        {
-            wxMutexLocker _l(*s_cfg_lock);
-            port = s_cfg.cfg_serial_port;
-        }
+        unsigned int port_nr = _cfg_get_port();
+	wxString port = _port_name(port_nr);
 
         bool connected = mcxcomm_connect(port.c_str());
 
-        if (connected || port != last_port)
+        if (connected || port_nr != m_port)
             wxLogDebug("reader connect %s: %s", port, connected ? "ok" : "failed");
+
+        m_port = port_nr;
 
         if (connected)
             break;
 
-        last_port = port;
-
         wxMilliSleep(500);
+
         if (m_terminated)
             return false;
     }
@@ -1063,6 +1088,13 @@ connect:
         return 0;
 
     while (!m_terminated) {
+
+	unsigned int port = _cfg_get_port();
+	if (port != m_port) {
+	    mcxcomm_disconnect();
+	    goto connect;
+	}
+
         bool err;
         bool recvd = mcxcomm_recv(&evt.evt_msg, 1500, &err);
 
@@ -1408,7 +1440,7 @@ _cam_init(bool *done)
 
   _enable_controls(EN_DISABLE);
 
-  status("Connecting to camera on " + s_cfg.cfg_serial_port);
+  status("Connecting to camera on " + _port_name(s_cfg.cfg_serial_port));
 
   s_reader_connected = false;
   s_camera_state = CAM_DISCONNECTED;
@@ -1724,7 +1756,7 @@ __update_int_time()
   long l = 0;
 
   if (s_re1.Matches(s)) {
-      unsigned int start, len;
+      size_t start, len;
       s_re1.GetMatch(&start, &len, 2);
       wxString mn = s.Mid(start, len);
       s_re1.GetMatch(&start, &len, 4);
@@ -1732,7 +1764,7 @@ __update_int_time()
       l = ::atol(mn.c_str()) * 60 + ::atol(sc);
   }
   else if (s_re2.Matches(s)) {
-      unsigned int start, len;
+      size_t start, len;
       s_re2.GetMatch(&start, &len, 2);
       wxString mn = s.Mid(start, len);
       s_re2.GetMatch(&start, &len, 3);
@@ -2674,13 +2706,15 @@ MainFrameD::portChoice(wxCommandEvent& event)
 {
     wxString port = m_port->GetStringSelection();
 
-    {
-        wxMutexLocker _l(*s_cfg_lock);
-        s_cfg.cfg_serial_port = port;
-    }
+    wxLogDebug("%s: port %s", __FUNCTION__, port);
+
+    unsigned int port_nr = _port_nr(port);
+
+    _cfg_set_port(port_nr);
 
     wxConfig::Get()->Write("CommPort", port);
 
+    s_camera_state = CAM_INIT;
     _do_camera_fsm();
 }
 
@@ -3397,10 +3431,8 @@ McxApp::OnInit()
     wxConfig::Get()->Read("CommPort", &port, "COM1");
     frame->m_port->SetStringSelection(port);
 
-    {
-        wxMutexLocker _l(*s_cfg_lock);
-        s_cfg.cfg_serial_port = port;
-    }
+    unsigned int port_nr = _port_nr(port);
+    _cfg_set_port(port_nr);
 
     frame->Show(true);
     SetTopWindow(frame);
