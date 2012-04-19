@@ -74,7 +74,7 @@
             <property name="size">-1,-1</property>
             <property name="style">wxDEFAULT_FRAME_STYLE</property>
             <property name="subclass"></property>
-            <property name="title">Mallincam Control</property>
+            <property name="title">MallinCam Control</property>
             <property name="toolbar_pane">0</property>
             <property name="tooltip"></property>
             <property name="validator_data_type"></property>
@@ -304,8 +304,8 @@
                             <property name="label">tool</property>
                             <property name="name">m_load</property>
                             <property name="permission">protected</property>
-                            <property name="statusbar">Load custom presets</property>
-                            <property name="tooltip">Load custom presets</property>
+                            <property name="statusbar">Load settings from file</property>
+                            <property name="tooltip">Load settings from file</property>
                             <event name="OnAuiToolBarBeginDrag"></event>
                             <event name="OnAuiToolBarMiddleClick"></event>
                             <event name="OnAuiToolBarOverflowClick"></event>
@@ -325,8 +325,8 @@
                             <property name="label">tool</property>
                             <property name="name">m_save</property>
                             <property name="permission">protected</property>
-                            <property name="statusbar">Save presets</property>
-                            <property name="tooltip">Save presets</property>
+                            <property name="statusbar">Save settings to file</property>
+                            <property name="tooltip">Save settings to file</property>
                             <event name="OnAuiToolBarBeginDrag"></event>
                             <event name="OnAuiToolBarMiddleClick"></event>
                             <event name="OnAuiToolBarOverflowClick"></event>
@@ -624,7 +624,7 @@
                                         <property name="minimize_button">0</property>
                                         <property name="minimum_size"></property>
                                         <property name="moveable">1</property>
-                                        <property name="name">m_staticText1</property>
+                                        <property name="name">m_senseUpLabel</property>
                                         <property name="pane_border">1</property>
                                         <property name="pane_position"></property>
                                         <property name="pane_size"></property>
@@ -932,7 +932,7 @@
                                                 <property name="minimize_button">0</property>
                                                 <property name="minimum_size"></property>
                                                 <property name="moveable">1</property>
-                                                <property name="name">m_staticText26</property>
+                                                <property name="name">m_alcLabel</property>
                                                 <property name="pane_border">1</property>
                                                 <property name="pane_position"></property>
                                                 <property name="pane_size"></property>
@@ -1225,7 +1225,7 @@
                                                 <property name="minimize_button">0</property>
                                                 <property name="minimum_size"></property>
                                                 <property name="moveable">1</property>
-                                                <property name="name">m_staticText27</property>
+                                                <property name="name">m_elcLabel</property>
                                                 <property name="pane_border">1</property>
                                                 <property name="pane_position"></property>
                                                 <property name="pane_size"></property>
@@ -1731,7 +1731,7 @@
                                                 <property name="minimize_button">0</property>
                                                 <property name="minimum_size"></property>
                                                 <property name="moveable">1</property>
-                                                <property name="name">m_staticText28</property>
+                                                <property name="name">m_agcManLabel</property>
                                                 <property name="pane_border">1</property>
                                                 <property name="pane_position"></property>
                                                 <property name="pane_size"></property>
@@ -2024,7 +2024,7 @@
                                                 <property name="minimize_button">0</property>
                                                 <property name="minimum_size"></property>
                                                 <property name="moveable">1</property>
-                                                <property name="name">m_staticText29</property>
+                                                <property name="name">m_agcAutoLabel</property>
                                                 <property name="pane_border">1</property>
                                                 <property name="pane_position"></property>
                                                 <property name="pane_size"></property>
@@ -2334,7 +2334,7 @@
                                                 <property name="minimize_button">0</property>
                                                 <property name="minimum_size"></property>
                                                 <property name="moveable">1</property>
-                                                <property name="name">m_staticText10</property>
+                                                <property name="name">m_apcHLabel</property>
                                                 <property name="pane_border">1</property>
                                                 <property name="pane_position"></property>
                                                 <property name="pane_size"></property>
@@ -2627,7 +2627,7 @@
                                                 <property name="minimize_button">0</property>
                                                 <property name="minimum_size"></property>
                                                 <property name="moveable">1</property>
-                                                <property name="name">m_staticText101</property>
+                                                <property name="name">m_apcVLabel</property>
                                                 <property name="pane_border">1</property>
                                                 <property name="pane_position"></property>
                                                 <property name="pane_size"></property>
@@ -3239,7 +3239,7 @@
                                                         <property name="minimize_button">0</property>
                                                         <property name="minimum_size"></property>
                                                         <property name="moveable">1</property>
-                                                        <property name="name">m_staticText16</property>
+                                                        <property name="name">m_wtbManLabel</property>
                                                         <property name="pane_border">1</property>
                                                         <property name="pane_position"></property>
                                                         <property name="pane_size"></property>
@@ -3620,7 +3620,7 @@
                                                                 <property name="minimize_button">0</property>
                                                                 <property name="minimum_size"></property>
                                                                 <property name="moveable">1</property>
-                                                                <property name="name">m_staticText17</property>
+                                                                <property name="name">m_wtbRedLabel</property>
                                                                 <property name="pane_border">1</property>
                                                                 <property name="pane_position"></property>
                                                                 <property name="pane_size"></property>
@@ -3923,7 +3923,7 @@
                                                                 <property name="minimize_button">0</property>
                                                                 <property name="minimum_size"></property>
                                                                 <property name="moveable">1</property>
-                                                                <property name="name">m_staticText171</property>
+                                                                <property name="name">m_wtbBlueLabel</property>
                                                                 <property name="pane_border">1</property>
                                                                 <property name="pane_position"></property>
                                                                 <property name="pane_size"></property>
@@ -4237,7 +4237,7 @@
                                                 <property name="minimize_button">0</property>
                                                 <property name="minimum_size"></property>
                                                 <property name="moveable">1</property>
-                                                <property name="name">m_staticText21</property>
+                                                <property name="name">m_tecLevelLabel</property>
                                                 <property name="pane_border">1</property>
                                                 <property name="pane_position"></property>
                                                 <property name="pane_size"></property>
@@ -4530,7 +4530,7 @@
                                                 <property name="minimize_button">0</property>
                                                 <property name="minimum_size"></property>
                                                 <property name="moveable">1</property>
-                                                <property name="name">m_staticText23</property>
+                                                <property name="name">m_dewRemovalLabel</property>
                                                 <property name="pane_border">1</property>
                                                 <property name="pane_position"></property>
                                                 <property name="pane_size"></property>
@@ -4837,7 +4837,7 @@
                                                 <property name="minimize_button">0</property>
                                                 <property name="minimum_size"></property>
                                                 <property name="moveable">1</property>
-                                                <property name="name">m_staticText3</property>
+                                                <property name="name">m_gammaLabel</property>
                                                 <property name="pane_border">1</property>
                                                 <property name="pane_position"></property>
                                                 <property name="pane_size"></property>
@@ -5130,7 +5130,7 @@
                                                 <property name="minimize_button">0</property>
                                                 <property name="minimum_size"></property>
                                                 <property name="moveable">1</property>
-                                                <property name="name">m_staticText4</property>
+                                                <property name="name">m_zoomLabel</property>
                                                 <property name="pane_border">1</property>
                                                 <property name="pane_position"></property>
                                                 <property name="pane_size"></property>
@@ -5423,7 +5423,7 @@
                                                 <property name="minimize_button">0</property>
                                                 <property name="minimum_size"></property>
                                                 <property name="moveable">1</property>
-                                                <property name="name">m_staticText5</property>
+                                                <property name="name">m_coronagraphLabel</property>
                                                 <property name="pane_border">1</property>
                                                 <property name="pane_position"></property>
                                                 <property name="pane_size"></property>
@@ -6112,7 +6112,7 @@
                                                                         <event name="OnMouseEvents"></event>
                                                                         <event name="OnMouseWheel"></event>
                                                                         <event name="OnPaint"></event>
-                                                                        <event name="OnRadioButton"></event>
+                                                                        <event name="OnRadioButton">titleTLClicked</event>
                                                                         <event name="OnRightDClick"></event>
                                                                         <event name="OnRightDown"></event>
                                                                         <event name="OnRightUp"></event>
@@ -6200,7 +6200,7 @@
                                                                         <event name="OnMouseEvents"></event>
                                                                         <event name="OnMouseWheel"></event>
                                                                         <event name="OnPaint"></event>
-                                                                        <event name="OnRadioButton"></event>
+                                                                        <event name="OnRadioButton">titleTRClicked</event>
                                                                         <event name="OnRightDClick"></event>
                                                                         <event name="OnRightDown"></event>
                                                                         <event name="OnRightUp"></event>
@@ -6288,7 +6288,7 @@
                                                                         <event name="OnMouseEvents"></event>
                                                                         <event name="OnMouseWheel"></event>
                                                                         <event name="OnPaint"></event>
-                                                                        <event name="OnRadioButton"></event>
+                                                                        <event name="OnRadioButton">titleBLClicked</event>
                                                                         <event name="OnRightDClick"></event>
                                                                         <event name="OnRightDown"></event>
                                                                         <event name="OnRightUp"></event>
@@ -6376,7 +6376,7 @@
                                                                         <event name="OnMouseEvents"></event>
                                                                         <event name="OnMouseWheel"></event>
                                                                         <event name="OnPaint"></event>
-                                                                        <event name="OnRadioButton"></event>
+                                                                        <event name="OnRadioButton">titleBRClicked</event>
                                                                         <event name="OnRightDClick"></event>
                                                                         <event name="OnRightDown"></event>
                                                                         <event name="OnRightUp"></event>
@@ -6768,7 +6768,7 @@
                         <event name="OnEraseBackground"></event>
                         <event name="OnHtmlCellClicked"></event>
                         <event name="OnHtmlCellHover"></event>
-                        <event name="OnHtmlLinkClicked"></event>
+                        <event name="OnHtmlLinkClicked">LinkClicked</event>
                         <event name="OnKeyDown"></event>
                         <event name="OnKeyUp"></event>
                         <event name="OnKillFocus"></event>

@@ -334,10 +334,23 @@ wxLogDebug("%s",__FUNCTION__);
     return true;
 }
 
-bool
-mcxcomm_connect(const char *filename)
+static void
+_get_filename(char *buf, size_t len, const char *device)
 {
-wxLogDebug("%s %p %s",__FUNCTION__,s_dev,filename);
+    unsigned int n;
+    int ret = sscanf(&device[3], "%u", &n);
+    if (ret == 1 && n > 9)
+        snprintf(buf, len, "\\\\.\\%s", device);
+    else
+        snprintf(buf, len, "%s", device);
+}
+
+bool
+mcxcomm_connect(const char *device)
+{
+wxLogDebug("%s %p %s",__FUNCTION__,s_dev,device);
+    char filename[32];
+    _get_filename(filename, sizeof(filename), device);
     int ret = s_dev->Open(filename, 9600, "8N1", SerialPort::NoFlowControl);
     wxLogDebug("%s ret=%d",__FUNCTION__,ret);
     return ret == 0;

@@ -3,7 +3,8 @@
 # include "wx/wx.h"
 #endif
 
-#include <wx/config.h>
+#include "wx/config.h"
+#include "wx/regex.h"
 
 #include "mcxgui.h"
 #include "mcxcomm.h"
@@ -199,58 +200,59 @@ static Config s_cfg;
 
 struct Camera
 {
-  wxString title;
-  u8 titlePos; // 0 = left-up 1=left-down 2=r-up 3=r-dn
+    wxString title;
+    u8 titleOn; // 0=off 1=on
+    u8 titlePos; // 0 = left-up 1=left-down 2=r-up 3=r-dn
 
-  u8 senseUp;  // 0 = off, 1=2x, 4x, ... 0xc=128x
+    u8 senseUp;  // 0 = off, 1=2x, 4x, ... 0xc=128x
 
-  u8 alcElc;  // 0=alc 1=elc
-  u8 alc; // 0=off 1=1/100 .. 0xf=1/12000
-  u8 elc; // 0=min .. 8=max
+    u8 alcElc;  // 0=alc 1=elc
+    u8 alc; // 0=off 1=1/100 .. 0xf=1/12000
+    u8 elc; // 0=min .. 8=max
 
-  u8 blc; // 0=off 1=on 2=peak
-  u8 blcPreset; // 0=off 1=on [when blc=on]
-  u8 blcArea[6];
-  u8 blcPeak; // 0=min 8=max
+    u8 blc; // 0=off 1=on 2=peak
+    u8 blcPreset; // 0=off 1=on [when blc=on]
+    u8 blcArea[6];
+    u8 blcPeak; // 0=min 8=max
 
-  u8 agc; // 0=off 1=on 2=manual
-  u8 agcLevel; // 0=min 8=max [when agc==on]
-  u8 agcManual; // 0=min 8=max
+    u8 agc; // 0=off 1=on 2=manual
+    u8 agcLevel; // 0=min 8=max [when agc==on]
+    u8 agcManual; // 0=min 8=max
 
-  u8 wtb; // 0=atw 1=awc 2=man
-  u8 wtbMan; // 0=3200 1=5600 2=user
-  u8 wtbRed; // 0=min 8=max [when wtbMan == user]
-  u8 wtbBlue; // 0=min 8=max [when wtbMan == user]
+    u8 wtb; // 0=atw 1=awc 2=man
+    u8 wtbMan; // 0=3200 1=5600 2=user
+    u8 wtbRed; // 0=min 8=max [when wtbMan == user]
+    u8 wtbBlue; // 0=min 8=max [when wtbMan == user]
 
-  u8 sync; // 0=int 1=line 2=vbs
+    u8 sync; // 0=int 1=line 2=vbs
 
-  struct {
-    u8 on; // 0=off 1=on
-    u8 area[4]; // mask area
-  } mask[4];
+    struct {
+        u8 on; // 0=off 1=on
+        u8 area[4]; // mask area
+    } mask[4];
 
-  u8 neg; // 0=pos 1=neg
-  u8 hRev; // 0=off 1=on
-  u8 vRev; // 0=off 1=on
+    u8 neg; // 0=pos 1=neg
+    u8 hRev; // 0=off 1=on
+    u8 vRev; // 0=off 1=on
 
-  u8 freezeMode; // 0=fld 1=frame
-  u8 freeze; // 0=off 1=on
-  u8 priority; // 0=agc 1=senseup
-  u8 gamma; // 0=0.45 1=1.0
+    u8 freezeMode; // 0=fld 1=frame
+    u8 freeze; // 0=off 1=on
+    u8 priority; // 0=agc 1=senseup
+    u8 gamma; // 0=0.45 1=1.0
 
-  u8 apcH; // 0..0x12
-  u8 apcV; // 0..0x12
+    u8 apcH; // 0..0x12
+    u8 apcV; // 0..0x12
 
-  u8 coronagraph; // 1..0x12   todo: 1-0x12 ???
-  u8 colorBars; // 0=off 1=on
+    u8 coronagraph; // 1..0x12   todo: 1-0x12 ???
+    u8 colorBars; // 0=off 1=on
 
-  u8 tec; // 0=off 1=on
-  u8 tecLevel; // 0..8 [when tec==on]
-  u8 dewRemoval; // 0=10s 1=30s 2=60s
-  u8 tecArea[6]; // [for tec==on]
+    u8 tec; // 0=off 1=on
+    u8 tecLevel; // 0..8 [when tec==on]
+    u8 dewRemoval; // 0=10s 1=30s 2=60s
+    u8 tecArea[6]; // [for tec==on]
 
-  u8 zoom; // 0=off 1=on
-  u8 zoomLevel; // 0..8
+    u8 zoom; // 0=off 1=on
+    u8 zoomLevel; // 0..8
 };
 
 static Camera s_cam0, s_cam1;
@@ -276,6 +278,7 @@ _save_cam(const char *filename, const Camera *cam)
 
 #define F(name) fprintf(fp, #name " = %u\n", cam->name)
 
+    F(titleOn);
     F(titlePos);
     F(senseUp);
     F(alcElc);
@@ -428,6 +431,7 @@ __load_cam(Camera *cam, const char *filename)
 	} while (false)
 
 	// todo: wxString title
+	F(titleOn);
 	F(titlePos);
 	F(senseUp);
 	F(alcElc);
@@ -804,15 +808,14 @@ gen_cmds(const Camera& a, const Camera& b)
 {
   // title
   if (b.title != a.title) {
-    bool const a_on = !a.title.empty();
-    bool const b_on = !b.title.empty();
-    if (!b.title.empty()) {
       u8 buf[DATA_LEN - 1];
       _gen_title(&buf[0], b.title.c_str());
       emit2(0x10, 1, &buf[0], sizeof(buf));
-    }
-    if (b_on != a_on)
-      emit2(0x10, 0, b_on ? 1 : 0);
+  }
+
+  // title on
+  if (b.titleOn != a.titleOn) {
+    emit2(0x10, 0, b.titleOn);
   }
 
   // title pos
@@ -1112,6 +1115,11 @@ public:
     void coronagraphScroll(wxScrollEvent& event);
     void portChoice(wxCommandEvent& event);
 
+    void titleTLClicked(wxCommandEvent& event);
+    void titleTRClicked(wxCommandEvent& event);
+    void titleBLClicked(wxCommandEvent& event);
+    void titleBRClicked(wxCommandEvent& event);
+
     void atwSelected(wxCommandEvent& event);
     void awcSelected(wxCommandEvent& event);
     void wtbRBSelected(wxCommandEvent& event);
@@ -1273,9 +1281,7 @@ _handle_smry_2()
   s_cam0.wtbBlue = s_fsm_response.data[9];
   s_cam0.wtbRed = s_fsm_response.data[10];
   s_cam0.zoom = s_fsm_response.data[11];
-  u8 titleOn = s_fsm_response.data[12];
-  if (!titleOn)
-      s_cam0.title = "";
+  s_cam0.titleOn = s_fsm_response.data[12];
 }
 
 static void
@@ -1573,7 +1579,7 @@ _cam_reading2(bool *done)
 
         mcxcomm_send_ack();
 
-	wxMilliSleep(COMMAND_DELAY_MS); // todo needed? make async?
+	wxMilliSleep(COMMAND_DELAY_MS * 2); // todo needed? make async?
 
         _handle_smry();
 
@@ -1696,10 +1702,47 @@ __update_int_time()
   MainFrameD *win = _win();
   wxString s = win->m_int->GetValue();
 
-  long l = ::atol(s.c_str());
+  static bool s_inited;
+  static wxRegEx s_re1;
+  static wxRegEx s_re2;
+
+  if (!s_inited) {
+
+      // 33
+      // 33s
+      // 3m
+      // 2m30
+      // 2m30s
+      // :30
+      // 2:30
+
+      s_re1.Compile("^(([0-9]+)m)?(([0-9]+)s?)?$");
+      s_re2.Compile("^(([0-9]+)?:)?([0-9]+)$");
+      s_inited = true;
+  }
+
+  long l = 0;
+
+  if (s_re1.Matches(s)) {
+      unsigned int start, len;
+      s_re1.GetMatch(&start, &len, 2);
+      wxString mn = s.Mid(start, len);
+      s_re1.GetMatch(&start, &len, 4);
+      wxString sc = s.Mid(start, len);
+      l = ::atol(mn.c_str()) * 60 + ::atol(sc);
+  }
+  else if (s_re2.Matches(s)) {
+      unsigned int start, len;
+      s_re2.GetMatch(&start, &len, 2);
+      wxString mn = s.Mid(start, len);
+      s_re2.GetMatch(&start, &len, 3);
+      wxString sc = s.Mid(start, len);
+      l = ::atol(mn.c_str()) * 60 + ::atol(sc);
+  }
+
   if (l < 3) {
-    l = 3;
-    win->m_int->SetValue("3");
+      l = 3;
+      win->m_int->SetValue("3");
   }
 
   s_int_time = l * 1000;
@@ -1745,6 +1788,18 @@ _int_init2(bool *done)
         *done = true;
 }
 
+static const char *
+_minsec(char *buf, size_t len, unsigned int t)
+{
+    unsigned int mn = t / 60;
+    unsigned int sc = t % 60;
+    if (mn > 0)
+        snprintf(buf, len, "%u:%02u", mn, sc);
+    else
+        snprintf(buf, len, ":%02u", sc);
+    return buf;
+}
+
 static void
 _int_status(long elapsed)
 {
@@ -1755,7 +1810,11 @@ _int_status(long elapsed)
     unsigned int e = elapsed / 1000;
     unsigned int rem = total - e;
     char buf[80];
-    snprintf(buf, sizeof(buf), "INT %2u / %2u REM = %2u", e, total, rem);
+    char b1[16], b2[16], b3[16];
+    snprintf(buf, sizeof(buf), "Integrating:  %s / %s elapsed, %s remaining",
+             _minsec(b1, sizeof(b1), e),
+             _minsec(b2, sizeof(b2), total),
+             _minsec(b3, sizeof(b3), rem));
     status(buf);
   }
 }
@@ -1913,9 +1972,13 @@ wxLogDebug("SENDAGC agc %u=>%u %u=>%u %u=>%u",s_cam0.agc,s_cam1.agc,s_cam0.agcMa
 static void
 _waitmsg(char *buf, size_t len, const char *prefix, unsigned int elapsed, unsigned int total)
 {
+//    :30 / 1:00 elapsed :30 remaining.  Click here to Cancel
     unsigned int rem = total - elapsed;
-    snprintf(buf, len, "%s %2u / %2u REM = %2u  Click here to Cancel",
-	     prefix, elapsed, total, rem);
+    char b1[16], b2[16], b3[16];
+    snprintf(buf, len, "%s:  %s / %s elapsed, %s remaining.  Click here to Cancel",
+	     prefix, _minsec(b1, sizeof(b1), elapsed),
+             _minsec(b2, sizeof(b2), total),
+             _minsec(b3, sizeof(b3), rem));
 }
 
 static void
@@ -2622,6 +2685,38 @@ MainFrameD::portChoice(wxCommandEvent& event)
 }
 
 void
+MainFrameD::titleTLClicked(wxCommandEvent& event)
+{
+    wxLogDebug("%s", __FUNCTION__);
+    s_cam1.titlePos = 0;
+    dnotify(UPD_IMMEDIATE);
+}
+
+void
+MainFrameD::titleTRClicked(wxCommandEvent& event)
+{
+    wxLogDebug("%s", __FUNCTION__);
+    s_cam1.titlePos = 2;
+    dnotify(UPD_IMMEDIATE);
+}
+
+void
+MainFrameD::titleBLClicked(wxCommandEvent& event)
+{
+    wxLogDebug("%s", __FUNCTION__);
+    s_cam1.titlePos = 1;
+    dnotify(UPD_IMMEDIATE);
+}
+
+void
+MainFrameD::titleBRClicked(wxCommandEvent& event)
+{
+    wxLogDebug("%s", __FUNCTION__);
+    s_cam1.titlePos = 3;
+    dnotify(UPD_IMMEDIATE);
+}
+
+void
 MainFrameD::doEnablesForWtb()
 {
   if (m_atwBtn->GetValue()) {
@@ -2654,7 +2749,8 @@ MainFrameD::doEnablesForWtb()
 void
 MainFrameD::InitControls(Camera *cam)
 {
-  m_title->SetValue(cam->title);
+  if (cam->titleOn)
+    m_title->SetValue(cam->title);
 
   switch (cam->titlePos) {
   case 0: m_titleTL->SetValue(true); break;
@@ -2856,6 +2952,7 @@ void
 MainFrameD::titleText(wxCommandEvent& event)
 {
   s_cam1.title = m_title->GetValue();
+  s_cam1.titleOn = s_cam1.title.IsEmpty() ? 0 : 1;
   dnotify(UPD_DEFER);
 }
 
@@ -3037,12 +3134,53 @@ MainFrameD::sleepClicked(wxCommandEvent& event)
     _do_camera_fsm();
 }
 
+class AboutDialogD : public AboutDialog
+{
+protected:
+    void LinkClicked(wxHtmlLinkEvent& event);
+
+public:
+    AboutDialogD(wxWindow *parent) : AboutDialog(parent) { }
+};
+
+void
+AboutDialogD::LinkClicked(wxHtmlLinkEvent& event)
+{
+    wxString href = event.GetLinkInfo().GetHref();
+
+#if defined(__WXMSW__)
+    ::ShellExecuteA(NULL, "open", href.c_str(), NULL, NULL, SW_SHOWNORMAL);
+#elif defined(__WXOSX__)
+    ::wxExecute("/usr/bin/open '" + href + "'", wxEXEC_ASYNC);
+#else
+    ::wxExecute("xdg-open '" + href + "'", wxEXEC_ASYNC);
+#endif
+}
+
 void
 MainFrameD::AboutClicked(wxCommandEvent& event)
 {
     wxLogDebug("%s id=%d", __FUNCTION__, event.GetId());
 
-    wxDialog *dlg = new AboutDialog(this);
+    AboutDialog *dlg = new AboutDialogD(this);
+    dlg->m_html->SetPage(
+"<html>"
+"<br>"
+"<br>"
+"<br>"
+"<center><h1>MallinCam Control</h1></center>"
+"<center>Version 0.1</center>"
+"<br>"
+"<br>"
+"<br>"
+"<center>For the <a href=\"http://mallincam.tripod.com/\">MallinCam</a> Xtreme Video CCD Camera</center>"
+"<br>"
+"<br>"
+"<br>"
+"<center>Written by</center>"
+"<center>Andy Galasso &lt;andy.galasso@gmail.com&gt;</center>"
+"</html>");
+
     dlg->ShowModal();
     delete dlg;
 }
@@ -3157,20 +3295,29 @@ MainFrameD::EnableControls(EnableType how)
     }
 
     m_senseUp->Enable(enable);
+    m_senseUpLabel->Enable(enable);
     m_alc->Enable(enable);
+    m_alcLabel->Enable(enable);
     m_elc->Enable(enable);
+    m_elcLabel->Enable(enable);
     m_agcMan->Enable(enable);
+    m_agcManLabel->Enable(enable);
     m_agcAuto->Enable(enable);
+    m_agcAutoLabel->Enable(enable);
     m_priority->Enable(enable);
     m_tecLevel->Enable(enable);
+    m_tecLevelLabel->Enable(enable);
     m_dewRemoval->Enable(enable);
+    m_dewRemovalLabel->Enable(enable);
     m_coronagraph->Enable(enable);
+    m_coronagraphLabel->Enable(enable);
     m_titleTL->Enable(enable);
     m_titleTR->Enable(enable);
     m_titleBL->Enable(enable);
     m_titleBR->Enable(enable);
     m_title->Enable(enable);
     m_zoom->Enable(enable);
+    m_zoomLabel->Enable(enable);
 
     m_toolBar->EnableTool(ID_DSO, enable);
     m_toolBar->EnableTool(ID_PLANET, enable);
@@ -3190,17 +3337,23 @@ MainFrameD::EnableControls(EnableType how)
         m_int->Enable(enable);
         m_intBtn->Enable(enable);
         m_gamma->Enable(enable);
+        m_gammaLabel->Enable(enable);
         m_apcH->Enable(enable);
+        m_apcHLabel->Enable(enable);
         m_apcV->Enable(enable);
+        m_apcVLabel->Enable(enable);
         m_toolBar->EnableTool(ID_FREEZE, enable);
         m_atwBtn->Enable(enable);
         m_awcBtn->Enable(enable);
         m_awcSet->Enable(enable);
+        m_wtbManLabel->Enable(enable);
         m_wtbRbBtn->Enable(enable);
         m_wtb3200Btn->Enable(enable);
         m_wtb5600Btn->Enable(enable);
         m_wtbRed->Enable(enable);
+        m_wtbRedLabel->Enable(enable);
         m_wtbBlue->Enable(enable);
+        m_wtbBlueLabel->Enable(enable);
     }
 
 #if defined(__WXMSW__) // workaround

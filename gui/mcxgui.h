@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Feb 13 2012)
+// C++ code generated with wxFormBuilder (version Feb  9 2012)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -65,50 +65,50 @@ class MainFrame : public wxFrame
 		};
 		
 		wxToolBar* m_toolBar;
-		wxStaticText* m_staticText1;
+		wxStaticText* m_senseUpLabel;
 		wxStaticText* m_senseUpVal;
-		wxStaticText* m_staticText26;
+		wxStaticText* m_alcLabel;
 		wxSlider* m_alc;
 		wxStaticText* m_alcVal;
-		wxStaticText* m_staticText27;
+		wxStaticText* m_elcLabel;
 		wxSlider* m_elc;
 		wxStaticText* m_elcVal;
-		wxStaticText* m_staticText28;
+		wxStaticText* m_agcManLabel;
 		wxStaticText* m_agcManVal;
-		wxStaticText* m_staticText29;
+		wxStaticText* m_agcAutoLabel;
 		wxSlider* m_agcAuto;
 		wxStaticText* m_agcAutoVal;
-		wxStaticText* m_staticText10;
+		wxStaticText* m_apcHLabel;
 		wxSlider* m_apcH;
 		wxStaticText* m_apcHVal;
-		wxStaticText* m_staticText101;
+		wxStaticText* m_apcVLabel;
 		wxSlider* m_apcV;
 		wxStaticText* m_apcVVal;
 		wxRadioButton* m_atwBtn;
 		wxRadioButton* m_awcBtn;
 		wxButton* m_awcSet;
-		wxStaticText* m_staticText16;
+		wxStaticText* m_wtbManLabel;
 		wxRadioButton* m_wtbRbBtn;
 		wxRadioButton* m_wtb3200Btn;
 		wxRadioButton* m_wtb5600Btn;
-		wxStaticText* m_staticText17;
+		wxStaticText* m_wtbRedLabel;
 		wxSlider* m_wtbRed;
 		wxStaticText* m_wtbRedVal;
-		wxStaticText* m_staticText171;
+		wxStaticText* m_wtbBlueLabel;
 		wxSlider* m_wtbBlue;
 		wxStaticText* m_wtbBlueVal;
-		wxStaticText* m_staticText21;
+		wxStaticText* m_tecLevelLabel;
 		wxStaticText* m_tecLevelVal;
-		wxStaticText* m_staticText23;
+		wxStaticText* m_dewRemovalLabel;
 		wxSlider* m_dewRemoval;
 		wxStaticText* m_dewRemovalVal;
-		wxStaticText* m_staticText3;
+		wxStaticText* m_gammaLabel;
 		wxSlider* m_gamma;
 		wxStaticText* m_gammaVal;
-		wxStaticText* m_staticText4;
+		wxStaticText* m_zoomLabel;
 		wxSlider* m_zoom;
 		wxStaticText* m_zoomVal;
-		wxStaticText* m_staticText5;
+		wxStaticText* m_coronagraphLabel;
 		wxSlider* m_coronagraph;
 		wxStaticText* m_coronagraphVal;
 		wxStaticText* label1;
@@ -159,6 +159,10 @@ class MainFrame : public wxFrame
 		virtual void zoomScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void coronagraphScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void portChoice( wxCommandEvent& event ) { event.Skip(); }
+		virtual void titleTLClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void titleTRClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void titleBLClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void titleBRClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void titleText( wxCommandEvent& event ) { event.Skip(); }
 		virtual void statusBarLeftUp( wxMouseEvent& event ) { event.Skip(); }
 		
@@ -172,7 +176,7 @@ class MainFrame : public wxFrame
 		wxChoice* m_port;
 		wxStatusBar* m_statusBar;
 		
-		MainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Mallincam Control"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+		MainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("MallinCam Control"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 		
 		~MainFrame();
 	
@@ -186,6 +190,10 @@ class AboutDialog : public wxDialog
 	private:
 	
 	protected:
+		
+		// Virtual event handlers, overide them in your derived class
+		virtual void LinkClicked( wxHtmlLinkEvent& event ) { event.Skip(); }
+		
 	
 	public:
 		wxHtmlWindow* m_html;

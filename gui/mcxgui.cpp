@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Feb 13 2012)
+// C++ code generated with wxFormBuilder (version Feb  9 2012)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -44,9 +44,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	m_toolBar->AddTool( ID_SOLAR, wxT("tool"), wxBitmap( solar_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load solar presets"), wxT("Load solar presets"), NULL ); 
 	
-	m_toolBar->AddTool( ID_LOAD, wxT("tool"), wxBitmap( Ld_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load custom presets"), wxT("Load custom presets"), NULL ); 
+	m_toolBar->AddTool( ID_LOAD, wxT("tool"), wxBitmap( Ld_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Load settings from file"), wxT("Load settings from file"), NULL ); 
 	
-	m_toolBar->AddTool( ID_SAVE, wxT("tool"), wxBitmap( Sv_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Save presets"), wxT("Save presets"), NULL ); 
+	m_toolBar->AddTool( ID_SAVE, wxT("tool"), wxBitmap( Sv_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Save settings to file"), wxT("Save settings to file"), NULL ); 
 	
 	m_toolBar->AddSeparator(); 
 	
@@ -93,9 +93,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* senseUpSizer;
 	senseUpSizer = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_staticText1 = new wxStaticText( this, wxID_ANY, wxT("Sense Up"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText1->Wrap( -1 );
-	senseUpSizer->Add( m_staticText1, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	m_senseUpLabel = new wxStaticText( this, wxID_ANY, wxT("Sense Up"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_senseUpLabel->Wrap( -1 );
+	senseUpSizer->Add( m_senseUpLabel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_senseUp = new wxSlider( this, wxID_ANY, 0, 0, 12, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
 	m_senseUp->SetMinSize( wxSize( 160,-1 ) );
@@ -117,9 +117,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer9;
 	bSizer9 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_staticText26 = new wxStaticText( this, wxID_ANY, wxT("ALC"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText26->Wrap( -1 );
-	bSizer9->Add( m_staticText26, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	m_alcLabel = new wxStaticText( this, wxID_ANY, wxT("ALC"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_alcLabel->Wrap( -1 );
+	bSizer9->Add( m_alcLabel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_alc = new wxSlider( this, wxID_ANY, 0, 0, 15, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
 	m_alc->SetMinSize( wxSize( 160,-1 ) );
@@ -138,9 +138,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer10;
 	bSizer10 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_staticText27 = new wxStaticText( this, wxID_ANY, wxT("ELC"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText27->Wrap( -1 );
-	bSizer10->Add( m_staticText27, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	m_elcLabel = new wxStaticText( this, wxID_ANY, wxT("ELC"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_elcLabel->Wrap( -1 );
+	bSizer10->Add( m_elcLabel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_elc = new wxSlider( this, wxID_ANY, 0, 0, 9, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
 	m_elc->SetMinSize( wxSize( 160,-1 ) );
@@ -189,9 +189,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer101;
 	bSizer101 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_staticText28 = new wxStaticText( this, wxID_ANY, wxT("Manual"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText28->Wrap( -1 );
-	bSizer101->Add( m_staticText28, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	m_agcManLabel = new wxStaticText( this, wxID_ANY, wxT("Manual"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_agcManLabel->Wrap( -1 );
+	bSizer101->Add( m_agcManLabel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_agcMan = new wxSlider( this, wxID_ANY, 0, 0, 9, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
 	m_agcMan->SetMinSize( wxSize( 160,-1 ) );
@@ -210,9 +210,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer11;
 	bSizer11 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_staticText29 = new wxStaticText( this, wxID_ANY, wxT("Auto"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText29->Wrap( -1 );
-	bSizer11->Add( m_staticText29, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	m_agcAutoLabel = new wxStaticText( this, wxID_ANY, wxT("Auto"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_agcAutoLabel->Wrap( -1 );
+	bSizer11->Add( m_agcAutoLabel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_agcAuto = new wxSlider( this, wxID_ANY, 0, 0, 9, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
 	m_agcAuto->SetMinSize( wxSize( 160,-1 ) );
@@ -237,9 +237,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer12;
 	bSizer12 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_staticText10 = new wxStaticText( this, wxID_ANY, wxT("H Gain"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText10->Wrap( -1 );
-	bSizer12->Add( m_staticText10, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	m_apcHLabel = new wxStaticText( this, wxID_ANY, wxT("H Gain"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_apcHLabel->Wrap( -1 );
+	bSizer12->Add( m_apcHLabel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_apcH = new wxSlider( this, wxID_ANY, 0, 0, 8, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
 	m_apcH->SetMinSize( wxSize( 160,-1 ) );
@@ -258,9 +258,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer121;
 	bSizer121 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_staticText101 = new wxStaticText( this, wxID_ANY, wxT("V Gain"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText101->Wrap( -1 );
-	bSizer121->Add( m_staticText101, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	m_apcVLabel = new wxStaticText( this, wxID_ANY, wxT("V Gain"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_apcVLabel->Wrap( -1 );
+	bSizer121->Add( m_apcVLabel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_apcV = new wxSlider( this, wxID_ANY, 0, 0, 8, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
 	m_apcV->SetMinSize( wxSize( 160,-1 ) );
@@ -314,9 +314,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer21;
 	bSizer21 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_staticText16 = new wxStaticText( this, wxID_ANY, wxT("Manual"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText16->Wrap( -1 );
-	bSizer21->Add( m_staticText16, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	m_wtbManLabel = new wxStaticText( this, wxID_ANY, wxT("Manual"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_wtbManLabel->Wrap( -1 );
+	bSizer21->Add( m_wtbManLabel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_wtbRbBtn = new wxRadioButton( this, wxID_ANY, wxT("R/B"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer21->Add( m_wtbRbBtn, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
@@ -339,9 +339,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	bSizer23->Add( 10, 0, 0, wxEXPAND, 5 );
 	
-	m_staticText17 = new wxStaticText( this, wxID_ANY, wxT("Red"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText17->Wrap( -1 );
-	bSizer23->Add( m_staticText17, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	m_wtbRedLabel = new wxStaticText( this, wxID_ANY, wxT("Red"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_wtbRedLabel->Wrap( -1 );
+	bSizer23->Add( m_wtbRedLabel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_wtbRed = new wxSlider( this, wxID_ANY, 0, 0, 8, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
 	m_wtbRed->Enable( false );
@@ -364,9 +364,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	bSizer231->Add( 10, 0, 0, wxEXPAND, 5 );
 	
-	m_staticText171 = new wxStaticText( this, wxID_ANY, wxT("Blue"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText171->Wrap( -1 );
-	bSizer231->Add( m_staticText171, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	m_wtbBlueLabel = new wxStaticText( this, wxID_ANY, wxT("Blue"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_wtbBlueLabel->Wrap( -1 );
+	bSizer231->Add( m_wtbBlueLabel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_wtbBlue = new wxSlider( this, wxID_ANY, 0, 0, 8, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
 	m_wtbBlue->Enable( false );
@@ -398,9 +398,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer201;
 	bSizer201 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_staticText21 = new wxStaticText( this, wxID_ANY, wxT("Noise Detection"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText21->Wrap( -1 );
-	bSizer201->Add( m_staticText21, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	m_tecLevelLabel = new wxStaticText( this, wxID_ANY, wxT("Noise Detection"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_tecLevelLabel->Wrap( -1 );
+	bSizer201->Add( m_tecLevelLabel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_tecLevel = new wxSlider( this, wxID_ANY, 0, 0, 9, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
 	m_tecLevel->SetMinSize( wxSize( 160,-1 ) );
@@ -419,9 +419,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer211;
 	bSizer211 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_staticText23 = new wxStaticText( this, wxID_ANY, wxT("Dew Removal"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText23->Wrap( -1 );
-	bSizer211->Add( m_staticText23, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	m_dewRemovalLabel = new wxStaticText( this, wxID_ANY, wxT("Dew Removal"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_dewRemovalLabel->Wrap( -1 );
+	bSizer211->Add( m_dewRemovalLabel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_dewRemoval = new wxSlider( this, wxID_ANY, 2, 0, 2, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
 	m_dewRemoval->SetMinSize( wxSize( 160,-1 ) );
@@ -446,9 +446,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* gammaSizer;
 	gammaSizer = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_staticText3 = new wxStaticText( this, wxID_ANY, wxT("Gamma"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText3->Wrap( -1 );
-	gammaSizer->Add( m_staticText3, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	m_gammaLabel = new wxStaticText( this, wxID_ANY, wxT("Gamma"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_gammaLabel->Wrap( -1 );
+	gammaSizer->Add( m_gammaLabel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_gamma = new wxSlider( this, wxID_ANY, 0, 0, 1, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
 	m_gamma->SetMinSize( wxSize( 160,-1 ) );
@@ -467,9 +467,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* zoomSizer;
 	zoomSizer = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_staticText4 = new wxStaticText( this, wxID_ANY, wxT("Zoom"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText4->Wrap( -1 );
-	zoomSizer->Add( m_staticText4, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	m_zoomLabel = new wxStaticText( this, wxID_ANY, wxT("Zoom"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_zoomLabel->Wrap( -1 );
+	zoomSizer->Add( m_zoomLabel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_zoom = new wxSlider( this, wxID_ANY, 0, 0, 9, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
 	m_zoom->SetMinSize( wxSize( 160,-1 ) );
@@ -488,9 +488,9 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* coronagraphSizer;
 	coronagraphSizer = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_staticText5 = new wxStaticText( this, wxID_ANY, wxT("Coronagraph"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText5->Wrap( -1 );
-	coronagraphSizer->Add( m_staticText5, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	m_coronagraphLabel = new wxStaticText( this, wxID_ANY, wxT("Coronagraph"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_coronagraphLabel->Wrap( -1 );
+	coronagraphSizer->Add( m_coronagraphLabel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	m_coronagraph = new wxSlider( this, wxID_ANY, 0, 0, 18, wxDefaultPosition, wxDefaultSize, wxSL_AUTOTICKS|wxSL_HORIZONTAL );
 	m_coronagraph->SetMinSize( wxSize( 160,-1 ) );
@@ -770,6 +770,10 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	m_coronagraph->Connect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( MainFrame::coronagraphScroll ), NULL, this );
 	m_coronagraph->Connect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( MainFrame::coronagraphScroll ), NULL, this );
 	m_port->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( MainFrame::portChoice ), NULL, this );
+	m_titleTL->Connect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::titleTLClicked ), NULL, this );
+	m_titleTR->Connect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::titleTRClicked ), NULL, this );
+	m_titleBL->Connect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::titleBLClicked ), NULL, this );
+	m_titleBR->Connect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::titleBRClicked ), NULL, this );
 	m_title->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( MainFrame::titleText ), NULL, this );
 	m_statusBar->Connect( wxEVT_LEFT_UP, wxMouseEventHandler( MainFrame::statusBarLeftUp ), NULL, this );
 }
@@ -928,6 +932,10 @@ MainFrame::~MainFrame()
 	m_coronagraph->Disconnect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( MainFrame::coronagraphScroll ), NULL, this );
 	m_coronagraph->Disconnect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( MainFrame::coronagraphScroll ), NULL, this );
 	m_port->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( MainFrame::portChoice ), NULL, this );
+	m_titleTL->Disconnect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::titleTLClicked ), NULL, this );
+	m_titleTR->Disconnect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::titleTRClicked ), NULL, this );
+	m_titleBL->Disconnect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::titleBLClicked ), NULL, this );
+	m_titleBR->Disconnect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::titleBRClicked ), NULL, this );
 	m_title->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( MainFrame::titleText ), NULL, this );
 	m_statusBar->Disconnect( wxEVT_LEFT_UP, wxMouseEventHandler( MainFrame::statusBarLeftUp ), NULL, this );
 	
@@ -949,8 +957,14 @@ AboutDialog::AboutDialog( wxWindow* parent, wxWindowID id, const wxString& title
 	bSizer26->Fit( this );
 	
 	this->Centre( wxBOTH );
+	
+	// Connect Events
+	m_html->Connect( wxEVT_COMMAND_HTML_LINK_CLICKED, wxHtmlLinkEventHandler( AboutDialog::LinkClicked ), NULL, this );
 }
 
 AboutDialog::~AboutDialog()
 {
+	// Disconnect Events
+	m_html->Disconnect( wxEVT_COMMAND_HTML_LINK_CLICKED, wxHtmlLinkEventHandler( AboutDialog::LinkClicked ), NULL, this );
+	
 }

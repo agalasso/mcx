@@ -1,5 +1,6 @@
 [mcx camera settings v1]
 title = ""
+titleOn = 0
 titlePos = 0
 senseUp = 0
 alcElc = 0

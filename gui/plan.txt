@@ -1,5 +1,8 @@
 TODO
-  about box
+  fix com port selection - disconnect, reconnect
+  bug:
+     read cam settings wtb went to 56k, should have been man r/b
+           => failed to read smry, time interval too short
   at startup, start agc timer if needed
   bug: slide to 128x, immediately start integration
   logging
@@ -8,16 +11,19 @@ TODO
   resolve COMMAND_DELAY_MS vs INT_CAPTURE_DELAY_MS - test it
   blc
   disable controls disable labels to make more obvious?
-  load/save camera preset
-     0x1e   "Exit item, SAVE setting"
-     0x20,0 "Exit item, PRESET setting"
+  save settings to camera?
+     0x1e   "Exit item, SAVE setting"    - save to camera
+  restore factory defaults
+     0x20,0 "Exit item, PRESET setting"  - revert to factory defaults
   resend mcx message if not acked?
-  accept varios integration time formats  2m 2:30 2.5m
-  better countdown timer status message format
-  title pos buttons
-  send empty title (not just turn off); or, send new title before title on
 
 done:
+  bug: read cam settings title = hi but title is off
+  accept varios integration time formats  2m 2:30 2.5m
+  better countdown timer status message format
+  send empty title (not just turn off); or, send new title before title on
+  title pos buttons
+  about box
   sleep camera
   ccd mode: agc off, apc off
   load/save/presets
