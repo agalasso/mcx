@@ -54,7 +54,7 @@ enum {
   DEFERRED_EVENT_INTERVAL = 1000, // milliseconds
 
   ACK_TIMEOUT_MS = 1000,
-  RESPONSE_TIMEOUT_MS = 5000,
+  RESPONSE_TIMEOUT_MS = 3000,
   COMMAND_DELAY_MS = 175,
   INT_CAPTURE_DELAY_MS = 175,
 
@@ -77,6 +77,7 @@ enum CameraState {
   CAM_READING4,
   CAM_SENDING1,
   CAM_SENDING2,
+  CAM_SENDING3,
   CAM_DELAY,
   CAM_UPTODATE,
   CAM_SHUTTING_DOWN,
@@ -1689,24 +1690,56 @@ _cam_reading4(bool *done)
 static void
 _cam_sending1(bool *done)
 {
+    s_fsm_send_cnt = 0;
+    s_camera_state = CAM_SENDING2;
+}
+
+static void
+_send_cmd()
+{
+    wxLogDebug("send_cmd: [%s]", _readable(s_active_cmd));
+
+    s_fsm_got_ack = false;
+    s_fsm_got_response = false;
+    mcxcomm_send_msg(s_active_cmd);
+
+    s_fsm_timeout = false;
+    s_fsm_timer->Start(ACK_TIMEOUT_MS, wxTIMER_ONE_SHOT);
+}
+
+static void
+_cam_sending2(bool *done)
+{
+    // command sent, waiting for ack
+
     if (s_fsm_got_ack) {
         // restart timer for response
         s_fsm_timeout = false;
         s_fsm_timer->Start(RESPONSE_TIMEOUT_MS, wxTIMER_ONE_SHOT);
-        s_camera_state = CAM_SENDING2;
+        s_camera_state = CAM_SENDING3;
         *done = true;
     }
     else if (s_fsm_timeout) {
-        s_int_stop_clicked = true; // stop integration if necessary
-        s_camera_state = CAM_DISCOVER;
+        if (++s_fsm_send_cnt < MAX_RETRIES) {
+            wxLogDebug("timed-out waiting for ACK, resending %u", s_fsm_send_cnt);
+            _send_cmd();
+            *done = true;
+        }
+        else {
+            wxLogDebug("timed-out waiting for ACK, REDISCOVER");
+            s_int_stop_clicked = true; // stop integration if necessary
+            s_camera_state = CAM_DISCOVER;
+        }
     }
     else
         *done = true;
 }
 
 static void
-_cam_sending2(bool *done)
+_cam_sending3(bool *done)
 {
+    // command sent and ack received, waiting for response
+
     if (s_fsm_got_response) {
 // TODO: handle NAK or other error response
         s_fsm_timer->Stop();
@@ -1718,8 +1751,17 @@ _cam_sending2(bool *done)
         *done = true;
     }
     else if (s_fsm_timeout) {
-        s_int_stop_clicked = true; // stop integration if necessary
-        s_camera_state = CAM_DISCOVER;
+        if (++s_fsm_send_cnt < MAX_RETRIES) {
+            wxLogDebug("timed-out waiting for response, resending %u", s_fsm_send_cnt);
+            _send_cmd();
+            s_camera_state = CAM_SENDING1; // reset retry count
+            *done = true;
+        }
+        else {
+            wxLogDebug("timed-out waiting for ACK, REDISCOVER");
+            s_int_stop_clicked = true; // stop integration if necessary
+            s_camera_state = CAM_DISCOVER;
+        }
     }
     else
         *done = true;
@@ -1743,14 +1785,7 @@ _cam_uptodate(bool *done)
         s_active_cmd = it->second;
         s_cmdmap.erase(it);
 
-        wxLogDebug("send_cmd: [%s]", _readable(s_active_cmd));
-
-        s_fsm_got_ack = false;
-        s_fsm_got_response = false;
-        mcxcomm_send_msg(s_active_cmd);
-
-        s_fsm_timeout = false;
-        s_fsm_timer->Start(ACK_TIMEOUT_MS, wxTIMER_ONE_SHOT);
+        _send_cmd();
 
         s_camera_state = CAM_SENDING1;
     }
@@ -1835,17 +1870,17 @@ _update_int_time()
 static void
 _int_init1(bool *done)
 {
-  // setup for integration
+    // setup for integration
 
-  //  wxLogDebug("INT_FSM %s", __FUNCTION__);
+    //  wxLogDebug("INT_FSM %s", __FUNCTION__);
 
-  _win()->m_intBtn->SetLabel("Stop");
+    _win()->m_intBtn->SetLabel("Stop");
 
-  _enable_controls(EN_DISABLE_FOR_INT);
+    _enable_controls(EN_DISABLE_FOR_INT);
 
-  __update_int_time();
-  s_int_stop_clicked = false;
-  s_int_state = INT_INIT2;
+    __update_int_time();
+    s_int_stop_clicked = false;
+    s_int_state = INT_INIT2;
 }
 
 inline static bool
@@ -1880,129 +1915,127 @@ _minsec(char *buf, size_t len, unsigned int t)
 static void
 _int_status(long elapsed)
 {
-  if (elapsed == -1)
-    status("");
-  else {
-    unsigned int total = (unsigned int) (s_int_time / 1000);
-    unsigned int e = elapsed / 1000;
-    unsigned int rem = total - e;
-    char buf[80];
-    char b1[16], b2[16], b3[16];
-    snprintf(buf, sizeof(buf), "Integrating:  %s / %s elapsed, %s remaining",
-             _minsec(b1, sizeof(b1), e),
-             _minsec(b2, sizeof(b2), total),
-             _minsec(b3, sizeof(b3), rem));
-    status(buf);
-  }
+    if (elapsed == -1)
+        status("");
+    else {
+        unsigned int total = (unsigned int) (s_int_time / 1000);
+        unsigned int e = elapsed / 1000;
+        unsigned int rem = total - e;
+        char buf[80];
+        char b1[16], b2[16], b3[16];
+        snprintf(buf, sizeof(buf), "Integrating:  %s / %s elapsed, %s remaining",
+                 _minsec(b1, sizeof(b1), e),
+                 _minsec(b2, sizeof(b2), total),
+                 _minsec(b3, sizeof(b3), rem));
+        status(buf);
+    }
 }
 
 static void
 _int_int1(bool *done)
 {
-  // start integration timers
+    // start integration timers
 
-  //  wxLogDebug("INT_FSM %s", __FUNCTION__);
-  s_int_stopwatch->Start();
-  s_int_timer->Start(500, wxTIMER_CONTINUOUS);
-  //  wxLogDebug("send sync=vbs");
-  s_cam1.sync = SYNC_VBS;
-  dnotify(UPD_IMMEDIATE);
-  _int_status(0);
-  s_int_state = INT_INT2;
-  *done = 1;
+    //  wxLogDebug("INT_FSM %s", __FUNCTION__);
+    s_int_stopwatch->Start();
+    s_int_timer->Start(500, wxTIMER_CONTINUOUS);
+    //  wxLogDebug("send sync=vbs");
+    s_cam1.sync = SYNC_VBS;
+    dnotify(UPD_IMMEDIATE);
+    _int_status(0);
+    s_int_state = INT_INT2;
+    *done = 1;
 }
 
 static void
 _int_int2(bool *done)
 {
-  // handle events during integration
+    // handle events during integration
 
-  //  wxLogDebug("INT_FSM %s", __FUNCTION__);
+    //  wxLogDebug("INT_FSM %s", __FUNCTION__);
 
-  if (s_int_stop_clicked) {
-    s_int_timer->Stop();
-    _int_status(-1);
-    s_int_state = INT_CAPTURE1;
-  }
-  else {
-    long elapsed = s_int_stopwatch->Time();
-    _int_status(elapsed);
-
-    if (elapsed >= s_int_time) {
-      s_int_timer->Stop();
-      s_int_state = INT_CAPTURE1;
+    if (s_int_stop_clicked) {
+        s_int_timer->Stop();
+        _int_status(-1);
+        s_int_state = INT_CAPTURE1; // fall through to revert sync=>int
     }
-    else
-      *done = true;
-  }
+    else {
+        long elapsed = s_int_stopwatch->Time();
+        _int_status(elapsed);
+
+        if (elapsed >= s_int_time) {
+            s_int_timer->Stop();
+            s_int_state = INT_CAPTURE1;
+        }
+        else
+            *done = true;
+    }
 }
 
 static void
 _int_capture1(bool *done)
 {
-  // wait for commands to drain; revert sync to int
+    // wait for commands to drain; revert sync to int
 
-  //  wxLogDebug("INT_FSM %s", __FUNCTION__);
+    //  wxLogDebug("INT_FSM %s", __FUNCTION__);
 
-  if (!_camera_cmds_in_flight()) {
-    //wxLogDebug("todo: send sync=int");
-    s_cam1.sync = SYNC_INT;
-    dnotify(UPD_IMMEDIATE);
-    if (s_int_stop_clicked)
-      s_int_state = INT_STOP;
-    else {
-      s_int_timer_expired = false;
-      s_int_timer->Start(INT_CAPTURE_DELAY_MS, wxTIMER_ONE_SHOT);
-      s_int_state = INT_CAPTURE2;
-      *done = true;
+    if (!_camera_cmds_in_flight()) {
+        s_cam1.sync = SYNC_INT;
+        dnotify(UPD_IMMEDIATE);
+        if (s_int_stop_clicked)
+            s_int_state = INT_STOP;
+        else {
+            s_int_timer_expired = false;
+            s_int_timer->Start(INT_CAPTURE_DELAY_MS, wxTIMER_ONE_SHOT);
+            s_int_state = INT_CAPTURE2;
+            *done = true;
+        }
     }
-  }
-  else
-    *done = true;
+    else
+        *done = true;
 }
 
 static void
 _int_capture2(bool *done)
 {
-  // wait for trigger timer
+    // wait for trigger timer
 
-  if (s_int_timer_expired)
-    s_int_state = INT_INT1;
-  else
-    *done = true;
+    if (s_int_timer_expired)
+        s_int_state = INT_INT1;
+    else
+        *done = true;
 }
 
 static void
 _int_stop(bool *done)
 {
-  //  wxLogDebug("INT_FSM %s", __FUNCTION__);
-  _win()->m_intBtn->SetLabel("Start");
-  _win()->EnableControls(EN_ENABLE_ALL);
-  s_int_state = INT_STOPPED;
+    _int_status(-1);
+    _win()->m_intBtn->SetLabel("Start");
+    _win()->EnableControls(EN_ENABLE_ALL);
+    s_int_state = INT_STOPPED;
 }
 
 static void
 _do_int_fsm()
 {
-  bool done = false;
+    bool done = false;
 
-  do {
-//if (s_int_state != INT_STOPPED) wxLogDebug("intfsm st=%d",s_int_state);
-    switch (s_int_state) {
-    case INT_STOPPED:  done = true;          break;
-    case INT_INIT1:    _int_init1(&done);    break;
-    case INT_INIT2:    _int_init2(&done);    break;
-    case INT_INT1:     _int_int1(&done);     break;
-    case INT_INT2:     _int_int2(&done);     break;
-    case INT_CAPTURE1: _int_capture1(&done); break;
-    case INT_CAPTURE2: _int_capture2(&done); break;
-    case INT_STOP:     _int_stop(&done);     break;
-    default:
-      wxASSERT(false);
-      done = true;
-      break;
-    }
-  } while (!done);
+    do {
+        switch (s_int_state) {
+        case INT_STOPPED:  done = true;          break;
+        case INT_INIT1:    _int_init1(&done);    break;
+        case INT_INIT2:    _int_init2(&done);    break;
+        case INT_INT1:     _int_int1(&done);     break;
+        case INT_INT2:     _int_int2(&done);     break;
+        case INT_CAPTURE1: _int_capture1(&done); break;
+        case INT_CAPTURE2: _int_capture2(&done); break;
+        case INT_STOP:     _int_stop(&done);     break;
+        default:
+            wxASSERT(false);
+            done = true;
+            break;
+        }
+    } while (!done);
 }
 
 #define SENSEUP_128X 12
@@ -2236,6 +2269,7 @@ ___do_camera_fsm()
     case CAM_READING4:      _cam_reading4(&done);      break;
     case CAM_SENDING1:      _cam_sending1(&done);      break;
     case CAM_SENDING2:      _cam_sending2(&done);      break;
+    case CAM_SENDING3:      _cam_sending3(&done);      break;
     case CAM_DELAY:         _cam_delay(&done);         break;
     case CAM_UPTODATE:      _cam_uptodate(&done);      break;
     case CAM_SHUTTING_DOWN: _cam_shutting_down(&done); break;
@@ -2462,39 +2496,38 @@ MainFrameD::elcScroll(wxScrollEvent& event)
 static void
 _start_integration()
 {
-  s_int_state = INT_INIT1;
-  _do_camera_fsm();
+    s_int_state = INT_INIT1;
+    _do_camera_fsm();
 }
 
 static void
 _stop_integration()
 {
-  s_int_stop_clicked = true;
-  _do_camera_fsm();
+    s_int_stop_clicked = true;
+    _do_camera_fsm();
 }
 
 void
 MainFrameD::intBtnClicked(wxCommandEvent& event)
 {
-  if (s_int_state != INT_STOPPED)
-    _stop_integration();
-  else
-    _start_integration();
+    if (s_int_state != INT_STOPPED)
+        _stop_integration();
+    else
+        _start_integration();
 }
 
 void
 MainFrameD::agcManUpdated()
 {
-  const char *sval[] = { "Off", "0", "1", "2", "3", "4", "5", "6", "7", "8", };
-  int const p = m_agcMan->GetValue();
-  wxASSERT(p >= 0 && p < lengthof(sval));
-  m_agcManVal->SetLabel(sval[p]);
+    const char *sval[] = { "Off", "0", "1", "2", "3", "4", "5", "6", "7", "8", };
+    int const p = m_agcMan->GetValue();
+    wxASSERT(p >= 0 && p < lengthof(sval));
+    m_agcManVal->SetLabel(sval[p]);
 }
 
 void
 MainFrameD::agcManScroll(wxScrollEvent& event)
 {
-wxLogDebug("%s enter",__FUNCTION__);
     agcManUpdated();
 
     int const p = event.GetPosition();
