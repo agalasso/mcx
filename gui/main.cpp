@@ -1565,7 +1565,6 @@ _cam_discovering(bool *done)
     }
     else if (s_fsm_timeout) {
         s_camera_state = CAM_DISCOVER;
-        // todo: after N timeouts, kill reader, >disconnected
     }
     else
         *done = true;
@@ -1654,6 +1653,7 @@ _cam_sending1(bool *done)
         *done = true;
     }
     else if (s_fsm_timeout) {
+        s_int_stop_clicked = true; // stop integration if necessary
         s_camera_state = CAM_DISCOVER;
     }
     else
@@ -1674,6 +1674,7 @@ _cam_sending2(bool *done)
         *done = true;
     }
     else if (s_fsm_timeout) {
+        s_int_stop_clicked = true; // stop integration if necessary
         s_camera_state = CAM_DISCOVER;
     }
     else
