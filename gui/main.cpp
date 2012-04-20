@@ -21,6 +21,8 @@ typedef unsigned int u32;
 #define K2(a,b) (K1(a)|((u32)(b) << 16))
 #define K3(a,b,c) (K2(a,b)|(u32)(c))
 
+enum { SENSEUP_128X = 12 };
+
 static void status(const wxString& str);
 
 DECLARE_EVENT_TYPE(EVT_MCX_MSG, -1)
@@ -80,7 +82,6 @@ enum CameraState {
   CAM_SENDING3,
   CAM_DELAY,
   CAM_UPTODATE,
-  CAM_SHUTTING_DOWN,
 };
 
 enum IntState {
@@ -100,6 +101,7 @@ enum AgcState {
   AGC_WAIT_INIT_NOWAIT,
   AGC_WAIT1,
   AGC_WAIT2,
+  AGC_WAIT3,
   AGC_CLEANUP,
   // park camera states
   AGC_PARK_INIT,
@@ -263,7 +265,7 @@ struct Camera
     u8 apcH; // 0..0x12
     u8 apcV; // 0..0x12
 
-    u8 coronagraph; // 1..0x12   todo: 1-0x12 ???
+    u8 coronagraph; // 1..0x12
     u8 colorBars; // 0=off 1=on
 
     u8 tec; // 0=off 1=on
@@ -439,6 +441,17 @@ __load_cam(Camera *cam, const char *filename)
 
 	// wxPrintf("name = [%s]  val = [%s]\n", name, val);
 
+        if (strcmp(name, "title") == 0) {
+            // title is double-quote delimited
+            p = val;
+            if (*p == '"')
+                ++p;
+            const char *e = p;
+            while (*e && *e != '"')
+                ++e;
+            cam->title = wxString(p, e - p);
+        }
+
 	unsigned int vv;
 
 #define F(fld) do { \
@@ -450,7 +463,6 @@ __load_cam(Camera *cam, const char *filename)
 	    } \
 	} while (false)
 
-	// todo: wxString title
 	F(titleOn);
 	F(titlePos);
 	F(senseUp);
@@ -1270,117 +1282,116 @@ MainFrameD::Destroy()
 static wxString
 _readable(const msg& cmd)
 {
-  char buf[128];
-  mcxcmd_dump(buf, sizeof(buf), &cmd);
-  return buf;
+    char buf[128];
+    mcxcmd_dump(buf, sizeof(buf), &cmd);
+    return buf;
 }
 
 static void
 _enable_controls(EnableType enable)
 {
-  _win()->EnableControls(enable);
+    _win()->EnableControls(enable);
 }
 
 static void
 _handle_smry_0()
 {
-  s_cam0.title = _decode_title(&s_fsm_response.data[1]);
-  wxLogDebug("read camera: title = [%s]", s_cam0.title);
+    s_cam0.title = _decode_title(&s_fsm_response.data[1]);
 }
 
 static void
 _handle_smry_1()
 {
-  s_cam0.blcPeak   = s_fsm_response.data[1];
-  s_cam0.titlePos  = s_fsm_response.data[2];
-  s_cam0.wtb       = s_fsm_response.data[3];
-  s_cam0.senseUp   = s_fsm_response.data[4];
-  s_cam0.zoomLevel = s_fsm_response.data[5];
-  s_cam0.alc       = s_fsm_response.data[6];
-  s_cam0.agcManual = s_fsm_response.data[7];
-  s_cam0.agcLevel  = s_fsm_response.data[8];
-  //  syncVMaxHi   = s_fsm_response.data[9];
-  //  syncVMaxLo   = s_fsm_response.data[10];
-  //  syncVCurHi   = s_fsm_response.data[11];
-  //  syncVCurLo   = s_fsm_response.data[12];
+    s_cam0.blcPeak   = s_fsm_response.data[1];
+    s_cam0.titlePos  = s_fsm_response.data[2];
+    s_cam0.wtb       = s_fsm_response.data[3];
+    s_cam0.senseUp   = s_fsm_response.data[4];
+    s_cam0.zoomLevel = s_fsm_response.data[5];
+    s_cam0.alc       = s_fsm_response.data[6];
+    s_cam0.agcManual = s_fsm_response.data[7];
+    s_cam0.agcLevel  = s_fsm_response.data[8];
+    //  syncVMaxHi   = s_fsm_response.data[9];
+    //  syncVMaxLo   = s_fsm_response.data[10];
+    //  syncVCurHi   = s_fsm_response.data[11];
+    //  syncVCurLo   = s_fsm_response.data[12];
 }
 
 static void
 _handle_smry_2()
 {
-  s_cam0.blcArea[0] = s_fsm_response.data[1];
-  s_cam0.blcArea[1] = s_fsm_response.data[2];
-  s_cam0.blcArea[2] = s_fsm_response.data[3];
-  s_cam0.blcArea[3] = s_fsm_response.data[4];
-  s_cam0.blcArea[4] = s_fsm_response.data[5];
-  s_cam0.blcArea[5] = s_fsm_response.data[6];
-  // unused = s_fsm_response.data[7];
-  s_cam0.wtbMan = s_fsm_response.data[8];
-  s_cam0.wtbBlue = s_fsm_response.data[9];
-  s_cam0.wtbRed = s_fsm_response.data[10];
-  s_cam0.zoom = s_fsm_response.data[11];
-  s_cam0.titleOn = s_fsm_response.data[12];
+    s_cam0.blcArea[0] = s_fsm_response.data[1];
+    s_cam0.blcArea[1] = s_fsm_response.data[2];
+    s_cam0.blcArea[2] = s_fsm_response.data[3];
+    s_cam0.blcArea[3] = s_fsm_response.data[4];
+    s_cam0.blcArea[4] = s_fsm_response.data[5];
+    s_cam0.blcArea[5] = s_fsm_response.data[6];
+    // unused = s_fsm_response.data[7];
+    s_cam0.wtbMan = s_fsm_response.data[8];
+    s_cam0.wtbBlue = s_fsm_response.data[9];
+    s_cam0.wtbRed = s_fsm_response.data[10];
+    s_cam0.zoom = s_fsm_response.data[11];
+    s_cam0.titleOn = s_fsm_response.data[12];
 }
 
 static void
 _handle_smry_3()
 {
-  s_cam0.alcElc = s_fsm_response.data[1];
-  s_cam0.blc = s_fsm_response.data[2];
-  s_cam0.blcPreset = s_fsm_response.data[3];
-  s_cam0.agc = s_fsm_response.data[4];
-  s_cam0.sync = s_fsm_response.data[5];
-  s_cam0.neg = s_fsm_response.data[6];
-  s_cam0.hRev = s_fsm_response.data[7];
-  s_cam0.priority = s_fsm_response.data[8];
-  s_cam0.mask[0].on = s_fsm_response.data[9];
-  s_cam0.mask[1].on = s_fsm_response.data[10];
-  s_cam0.mask[2].on = s_fsm_response.data[11];
-  s_cam0.mask[3].on = s_fsm_response.data[12];
+    s_cam0.alcElc = s_fsm_response.data[1];
+    s_cam0.blc = s_fsm_response.data[2];
+    s_cam0.blcPreset = s_fsm_response.data[3];
+    s_cam0.agc = s_fsm_response.data[4];
+    s_cam0.sync = s_fsm_response.data[5];
+    s_cam0.neg = s_fsm_response.data[6];
+    s_cam0.hRev = s_fsm_response.data[7];
+    s_cam0.priority = s_fsm_response.data[8];
+    s_cam0.mask[0].on = s_fsm_response.data[9];
+    s_cam0.mask[1].on = s_fsm_response.data[10];
+    s_cam0.mask[2].on = s_fsm_response.data[11];
+    s_cam0.mask[3].on = s_fsm_response.data[12];
 }
 
 static void
 _handle_smry_4()
 {
-  s_cam0.elc        = s_fsm_response.data[1]; // ?? check this
-  s_cam0.vRev       = s_fsm_response.data[2];
-  s_cam0.freezeMode = s_fsm_response.data[3];
-  s_cam0.freeze     = s_fsm_response.data[4];
-  //  s_cam0.syncHMax = s_fsm_response.data[5];
-  //  s_cam0.syncHCur = s_fsm_response.data[6];
-  //  unused = s_fsm_response.data[7];
-  //  unused = s_fsm_response.data[8];
-  //  unused = s_fsm_response.data[9];
-  //  unused = s_fsm_response.data[10];
-  //  unused = s_fsm_response.data[11];
-  //  unused = s_fsm_response.data[12];
+    s_cam0.elc        = s_fsm_response.data[1]; // ?? check this
+    s_cam0.vRev       = s_fsm_response.data[2];
+    s_cam0.freezeMode = s_fsm_response.data[3];
+    s_cam0.freeze     = s_fsm_response.data[4];
+    //  s_cam0.syncHMax = s_fsm_response.data[5];
+    //  s_cam0.syncHCur = s_fsm_response.data[6];
+    //  unused = s_fsm_response.data[7];
+    //  unused = s_fsm_response.data[8];
+    //  unused = s_fsm_response.data[9];
+    //  unused = s_fsm_response.data[10];
+    //  unused = s_fsm_response.data[11];
+    //  unused = s_fsm_response.data[12];
 }
 
 static void
 _handle_smry_5()
 {
-  s_cam0.tec = s_fsm_response.data[1];
-  //  s_cam0.tecPreset = s_fsm_response.data[2]; ???
-  s_cam0.tecLevel = s_fsm_response.data[3];
-  s_cam0.tecArea[0] = s_fsm_response.data[4];
-  s_cam0.tecArea[1] = s_fsm_response.data[5];
-  s_cam0.tecArea[2] = s_fsm_response.data[6];
-  s_cam0.tecArea[3] = s_fsm_response.data[7];
-  s_cam0.tecArea[4] = s_fsm_response.data[8];
-  s_cam0.tecArea[5] = s_fsm_response.data[9];
-  s_cam0.dewRemoval = s_fsm_response.data[10];
-  s_cam0.gamma = s_fsm_response.data[11];
-  //  unused = s_fsm_response.data[12];
+    s_cam0.tec = s_fsm_response.data[1];
+    //  s_cam0.tecPreset = s_fsm_response.data[2]; ???
+    s_cam0.tecLevel = s_fsm_response.data[3];
+    s_cam0.tecArea[0] = s_fsm_response.data[4];
+    s_cam0.tecArea[1] = s_fsm_response.data[5];
+    s_cam0.tecArea[2] = s_fsm_response.data[6];
+    s_cam0.tecArea[3] = s_fsm_response.data[7];
+    s_cam0.tecArea[4] = s_fsm_response.data[8];
+    s_cam0.tecArea[5] = s_fsm_response.data[9];
+    s_cam0.dewRemoval = s_fsm_response.data[10];
+    s_cam0.gamma = s_fsm_response.data[11];
+    //  unused = s_fsm_response.data[12];
 }
 
 static void
 _handle_smry_6()
 {
-  s_cam0.apcH = s_fsm_response.data[1];
-  s_cam0.apcV = s_fsm_response.data[2];
-  s_cam0.coronagraph = s_fsm_response.data[3]; // ??
-  s_cam0.colorBars = s_fsm_response.data[4];
-  //  unused = s_fsm_response.data[5..12];
+    s_cam0.apcH = s_fsm_response.data[1];
+    s_cam0.apcV = s_fsm_response.data[2];
+    s_cam0.coronagraph = s_fsm_response.data[3]; // ??
+    s_cam0.colorBars = s_fsm_response.data[4];
+    //  unused = s_fsm_response.data[5..12];
 }
 
 static void
@@ -1428,13 +1439,12 @@ _init_fixed_vals(Camera *cam)
 static void
 _init_ctrl_vals()
 {
-  _win()->InitControls(&s_cam1);
+    _win()->InitControls(&s_cam1);
 }
 
 static void
 _clear_buffered_commands()
 {
-wxLogDebug("clear buffered commands sets cam1 = cam0");
     s_cam1 = s_cam0;
     s_cmdmap.clear();
 }
@@ -1442,21 +1452,17 @@ wxLogDebug("clear buffered commands sets cam1 = cam0");
 static void
 _cam_init(bool *done)
 {
-  //  wxLogDebug("dostate %s", __FUNCTION__);
+    _enable_controls(EN_DISABLE);
 
-  _enable_controls(EN_DISABLE);
+    status("Connecting to camera on " + _port_name(s_cfg.cfg_serial_port));
 
-  status("Connecting to camera on " + _port_name(s_cfg.cfg_serial_port));
-
-  s_reader_connected = false;
-  s_camera_state = CAM_DISCONNECTED;
+    s_reader_connected = false;
+    s_camera_state = CAM_DISCONNECTED;
 }
 
 static void
 _cam_disconnected(bool *done)
 {
-    //  wxLogDebug("dostate %s", __FUNCTION__);
-
     if (s_reader_connected) {
         wxLogDebug("reader thread connected");
         s_camera_state = CAM_DISCOVER;
@@ -1561,8 +1567,6 @@ _send_smry_cmd()
 static void
 _cam_discovering(bool *done)
 {
-    //  wxLogDebug("dostate %s", __FUNCTION__);
-
     if (s_fsm_got_ack) {
         s_fsm_timer->Stop();
 
@@ -1625,6 +1629,10 @@ _init_cmds_done()
     _init_ctrl_vals();
     _enable_controls(EN_ENABLE_ALL);
     status("");
+
+    // start agc timer if needed
+    if (s_cam1.agc || s_cam1.senseUp == SENSEUP_128X)
+        s_agc_wait_state = AGC_WAIT2;
 }
 
 static void
@@ -1801,14 +1809,6 @@ _cam_uptodate(bool *done)
 }
 
 static void
-_cam_shutting_down(bool *done)
-{
-  wxLogDebug("dostate %s TODO", __FUNCTION__);
-  *done = true;
-  // todo
-}
-
-static void
 __update_int_time()
 {
   MainFrameD *win = _win();
@@ -1872,8 +1872,6 @@ _int_init1(bool *done)
 {
     // setup for integration
 
-    //  wxLogDebug("INT_FSM %s", __FUNCTION__);
-
     _win()->m_intBtn->SetLabel("Stop");
 
     _enable_controls(EN_DISABLE_FOR_INT);
@@ -1936,10 +1934,8 @@ _int_int1(bool *done)
 {
     // start integration timers
 
-    //  wxLogDebug("INT_FSM %s", __FUNCTION__);
     s_int_stopwatch->Start();
     s_int_timer->Start(500, wxTIMER_CONTINUOUS);
-    //  wxLogDebug("send sync=vbs");
     s_cam1.sync = SYNC_VBS;
     dnotify(UPD_IMMEDIATE);
     _int_status(0);
@@ -1951,8 +1947,6 @@ static void
 _int_int2(bool *done)
 {
     // handle events during integration
-
-    //  wxLogDebug("INT_FSM %s", __FUNCTION__);
 
     if (s_int_stop_clicked) {
         s_int_timer->Stop();
@@ -1976,8 +1970,6 @@ static void
 _int_capture1(bool *done)
 {
     // wait for commands to drain; revert sync to int
-
-    //  wxLogDebug("INT_FSM %s", __FUNCTION__);
 
     if (!_camera_cmds_in_flight()) {
         s_cam1.sync = SYNC_INT;
@@ -2037,8 +2029,6 @@ _do_int_fsm()
         }
     } while (!done);
 }
-
-#define SENSEUP_128X 12
 
 static u8
 _senseup_val(int scroll_val)
@@ -2130,20 +2120,16 @@ _agc_wait_init_nowait(bool *done)
 static void
 _agc_wait1(bool *done)
 {
+    // waiting for senseUp/agc grace period to expire and commands in flight
+    // to drain
+
     if (s_agc_timer_expired)
         if (_camera_cmds_in_flight())
             *done = true; // go back and wait
         else {
             bool changed = _send_agc();
-            if (changed) {
-                _enable_controls(EN_DISABLE);
-                _update_agc_status(0);
-                s_agc_wait_cancel_clicked = false;
-                s_agc_stopwatch->Start();
-                s_agc_timer->Start(500, wxTIMER_CONTINUOUS);
+            if (changed)
                 s_agc_wait_state = AGC_WAIT2;
-                *done = true;
-            }
             else
                 s_agc_wait_state = AGC_STABLE;
         }
@@ -2153,6 +2139,18 @@ _agc_wait1(bool *done)
 
 static void
 _agc_wait2(bool *done)
+{
+    _enable_controls(EN_DISABLE);
+    _update_agc_status(0);
+    s_agc_wait_cancel_clicked = false;
+    s_agc_stopwatch->Start();
+    s_agc_timer->Start(500, wxTIMER_CONTINUOUS);
+    s_agc_wait_state = AGC_WAIT3;
+    *done = true;
+}
+
+static void
+_agc_wait3(bool *done)
 {
     if (s_agc_wait_cancel_clicked)
         s_agc_wait_state = AGC_CLEANUP;
@@ -2231,99 +2229,94 @@ _agc_park_done(bool *done)
 static void
 _do_agc_wait_fsm()
 {
-  bool done = false;
+    bool done = false;
 
-  do {
-    switch (s_agc_wait_state) {
-    case AGC_STABLE:           done = true;                   break;
-    case AGC_WAIT_INIT:        _agc_wait_init(&done);         break;
-    case AGC_WAIT_INIT_NOWAIT: _agc_wait_init_nowait(&done);  break;
-    case AGC_WAIT1:            _agc_wait1(&done);             break;
-    case AGC_WAIT2:            _agc_wait2(&done);             break;
-    case AGC_CLEANUP:          _agc_cleanup(&done);           break;
-    case AGC_PARK_INIT:        _agc_park_init(&done);         break;
-    case AGC_PARK_WAIT:        _agc_park_wait(&done);         break;
-    case AGC_PARK_DONE:        _agc_park_done(&done);         break;
-    default:
-      wxASSERT(false);
-      done = true;
-      break;
-    }
-  } while (!done);
+    do {
+        switch (s_agc_wait_state) {
+        case AGC_STABLE:           done = true;                   break;
+        case AGC_WAIT_INIT:        _agc_wait_init(&done);         break;
+        case AGC_WAIT_INIT_NOWAIT: _agc_wait_init_nowait(&done);  break;
+        case AGC_WAIT1:            _agc_wait1(&done);             break;
+        case AGC_WAIT2:            _agc_wait2(&done);             break;
+        case AGC_WAIT3:            _agc_wait3(&done);             break;
+        case AGC_CLEANUP:          _agc_cleanup(&done);           break;
+        case AGC_PARK_INIT:        _agc_park_init(&done);         break;
+        case AGC_PARK_WAIT:        _agc_park_wait(&done);         break;
+        case AGC_PARK_DONE:        _agc_park_done(&done);         break;
+        default:
+            wxASSERT(false);
+            done = true;
+            break;
+        }
+    } while (!done);
 }
 
 static void
 ___do_camera_fsm()
 {
-  bool done = false;
+    bool done = false;
 
-  do {
-    switch (s_camera_state) {
-    case CAM_INIT:          _cam_init(&done);          break;
-    case CAM_DISCONNECTED:  _cam_disconnected(&done);  break;
-    case CAM_DISCOVER:      _cam_discover(&done);      break;
-    case CAM_DISCOVERING:   _cam_discovering(&done);   break;
-    case CAM_READING1:      _cam_reading1(&done);      break;
-    case CAM_READING2:      _cam_reading2(&done);      break;
-    case CAM_READING3:      _cam_reading3(&done);      break;
-    case CAM_READING4:      _cam_reading4(&done);      break;
-    case CAM_SENDING1:      _cam_sending1(&done);      break;
-    case CAM_SENDING2:      _cam_sending2(&done);      break;
-    case CAM_SENDING3:      _cam_sending3(&done);      break;
-    case CAM_DELAY:         _cam_delay(&done);         break;
-    case CAM_UPTODATE:      _cam_uptodate(&done);      break;
-    case CAM_SHUTTING_DOWN: _cam_shutting_down(&done); break;
-    default:
-      wxASSERT(false);
-      done = true;
-      break;
-    }
-  } while (!done);
+    do {
+        switch (s_camera_state) {
+        case CAM_INIT:          _cam_init(&done);          break;
+        case CAM_DISCONNECTED:  _cam_disconnected(&done);  break;
+        case CAM_DISCOVER:      _cam_discover(&done);      break;
+        case CAM_DISCOVERING:   _cam_discovering(&done);   break;
+        case CAM_READING1:      _cam_reading1(&done);      break;
+        case CAM_READING2:      _cam_reading2(&done);      break;
+        case CAM_READING3:      _cam_reading3(&done);      break;
+        case CAM_READING4:      _cam_reading4(&done);      break;
+        case CAM_SENDING1:      _cam_sending1(&done);      break;
+        case CAM_SENDING2:      _cam_sending2(&done);      break;
+        case CAM_SENDING3:      _cam_sending3(&done);      break;
+        case CAM_DELAY:         _cam_delay(&done);         break;
+        case CAM_UPTODATE:      _cam_uptodate(&done);      break;
+        default:
+            wxASSERT(false);
+            done = true;
+            break;
+        }
+    } while (!done);
 }
 
 static void
 __do_camera_fsm()
 {
-  //  wxLogDebug("_DO_FSM enter");
-
-  ___do_camera_fsm();
-  _do_int_fsm();
-  _do_agc_wait_fsm();
-
-  //  wxLogDebug("_DO_FSM exit");
+    ___do_camera_fsm();
+    _do_int_fsm();
+    _do_agc_wait_fsm();
 }
 
 static void
 _do_camera_fsm()
 {
-  static bool s_fsm_active;
-  static bool s_fsm_resched;
+    static bool s_fsm_active;
+    static bool s_fsm_resched;
 
-  if (s_fsm_active) {
-    s_fsm_resched = true;
-    return;
-  }
+    if (s_fsm_active) {
+        s_fsm_resched = true;
+        return;
+    }
 
-  s_fsm_active = true;
+    s_fsm_active = true;
 
-  do {
-    s_fsm_resched = false;
-    __do_camera_fsm();
-  } while (s_fsm_resched);
+    do {
+        s_fsm_resched = false;
+        __do_camera_fsm();
+    } while (s_fsm_resched);
 
-  s_fsm_active = false;
+    s_fsm_active = false;
 }
 
 static void
 _dnotify()
 {
   // fill in s_cmdmap
-  gen_cmds(s_cam0, s_cam1);
-wxLogDebug("dnotify updated cam0");
-  s_cam0 = s_cam1;
+    gen_cmds(s_cam0, s_cam1);
+    s_cam0 = s_cam1;
 
-  // send buffered commands to camera
-  _do_camera_fsm();
+    // send buffered commands to camera
+    _do_camera_fsm();
 }
 
 static void
@@ -2402,95 +2395,92 @@ MainFrameD::senseUpScroll(wxScrollEvent&)
 void
 MainFrameD::alcUpdated()
 {
-  const char *sval[] = { "Off", "1/100", "1/120", "1/180", "1/250", "1/350", "1/500", "1/750", "1/1000",
-			 "1/1500", "1/2000", "1/3000", "1/4000", "1/6000", "1/8000", "1/12000" };
-  int const p = m_alc->GetValue();
-  wxASSERT(p >= 0 && p < lengthof(sval));
-  m_alcVal->SetLabel(sval[p]);
+    const char *sval[] = { "Off", "1/100", "1/120", "1/180", "1/250", "1/350", "1/500", "1/750", "1/1000",
+                           "1/1500", "1/2000", "1/3000", "1/4000", "1/6000", "1/8000", "1/12000" };
+    int const p = m_alc->GetValue();
+    wxASSERT(p >= 0 && p < lengthof(sval));
+    m_alcVal->SetLabel(sval[p]);
 }
 
 void
 MainFrameD::alcScroll(wxScrollEvent& event)
 {
-  alcUpdated();
+    alcUpdated();
 
-  int const p = event.GetPosition();
+    int const p = event.GetPosition();
 
-  if (p > 0) {
-    // force sense-up off
-    m_senseUp->SetValue(0);
-    wxScrollEvent ev(wxEVT_SCROLL_TOP);
-    m_senseUp->GetEventHandler()->ProcessEvent(ev);
-    // set ELC off
-    m_elc->SetValue(0);
-    m_elc->GetEventHandler()->ProcessEvent(ev);
-  }
+    if (p > 0) {
+        // force sense-up off
+        m_senseUp->SetValue(0);
+        wxScrollEvent ev(wxEVT_SCROLL_TOP);
+        m_senseUp->GetEventHandler()->ProcessEvent(ev);
+        // set ELC off
+        m_elc->SetValue(0);
+        m_elc->GetEventHandler()->ProcessEvent(ev);
+    }
 
-  int const val[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
-  s_cam1.alcElc = 0; // alc
-  s_cam1.alc = val[p];
-  dnotify(UPD_DEFER);
+    int const val[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+    s_cam1.alcElc = 0; // alc
+    s_cam1.alc = val[p];
+    dnotify(UPD_DEFER);
 }
 
 void
 MainFrameD::intTextEnter(wxCommandEvent& event)
 {
-wxLogDebug("inttextenter");
-  _update_int_time();
+    _update_int_time();
 }
 
 void
 MainFrameD::intKillFocus(wxFocusEvent& event)
 {
-wxLogDebug("intkillfocus");
-  _update_int_time();
-  event.Skip();
+    _update_int_time();
+    event.Skip();
 }
 
 void
 MainFrameD::intCombobox(wxCommandEvent& event)
 {
-wxLogDebug("intcombobox");
-  _update_int_time();
+    _update_int_time();
 }
 
 void
 MainFrameD::elcUpdated()
 {
-  int const p = m_elc->GetValue();
+    int const p = m_elc->GetValue();
 
-  const char *sval[] = { "Off", "0", "1", "2", "3", "4", "5", "6", "7", "8", };
-  wxASSERT(p >= 0 && p < lengthof(sval));
-  m_elcVal->SetLabel(sval[p]);
+    const char *sval[] = { "Off", "0", "1", "2", "3", "4", "5", "6", "7", "8", };
+    wxASSERT(p >= 0 && p < lengthof(sval));
+    m_elcVal->SetLabel(sval[p]);
 }
 
 void
 MainFrameD::elcScroll(wxScrollEvent& event)
 {
-  elcUpdated();
+    elcUpdated();
 
-  int const p = event.GetPosition();
+    int const p = event.GetPosition();
 
-  if (p > 0) {
-    // force sense-up off
-    m_senseUp->SetValue(0);
-    wxScrollEvent ev(wxEVT_SCROLL_TOP);
-    m_senseUp->GetEventHandler()->ProcessEvent(ev);
-    // set ALC off
-    m_alc->SetValue(0);
-    m_alc->GetEventHandler()->ProcessEvent(ev);
-  }
+    if (p > 0) {
+        // force sense-up off
+        m_senseUp->SetValue(0);
+        wxScrollEvent ev(wxEVT_SCROLL_TOP);
+        m_senseUp->GetEventHandler()->ProcessEvent(ev);
+        // set ALC off
+        m_alc->SetValue(0);
+        m_alc->GetEventHandler()->ProcessEvent(ev);
+    }
 
-  int const val[] = { -1, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-  if (p == 0) { // off
-    s_cam1.alcElc = 0; // alc
-    s_cam1.alc = 0; // alc off
-  }
-  else {
-    s_cam1.alcElc = 1; // elc
-    s_cam1.elc = val[p];
-  }
-  dnotify(UPD_DEFER);
+    int const val[] = { -1, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+    if (p == 0) { // off
+        s_cam1.alcElc = 0; // alc
+        s_cam1.alc = 0; // alc off
+    }
+    else {
+        s_cam1.alcElc = 1; // elc
+        s_cam1.elc = val[p];
+    }
+    dnotify(UPD_DEFER);
 }
 
 static void
@@ -2801,7 +2791,6 @@ MainFrameD::portChoice(wxCommandEvent& event)
 void
 MainFrameD::titleTLClicked(wxCommandEvent& event)
 {
-    wxLogDebug("%s", __FUNCTION__);
     s_cam1.titlePos = 0;
     dnotify(UPD_IMMEDIATE);
 }
@@ -2809,7 +2798,6 @@ MainFrameD::titleTLClicked(wxCommandEvent& event)
 void
 MainFrameD::titleTRClicked(wxCommandEvent& event)
 {
-    wxLogDebug("%s", __FUNCTION__);
     s_cam1.titlePos = 2;
     dnotify(UPD_IMMEDIATE);
 }
@@ -2817,7 +2805,6 @@ MainFrameD::titleTRClicked(wxCommandEvent& event)
 void
 MainFrameD::titleBLClicked(wxCommandEvent& event)
 {
-    wxLogDebug("%s", __FUNCTION__);
     s_cam1.titlePos = 1;
     dnotify(UPD_IMMEDIATE);
 }
@@ -2825,7 +2812,6 @@ MainFrameD::titleBLClicked(wxCommandEvent& event)
 void
 MainFrameD::titleBRClicked(wxCommandEvent& event)
 {
-    wxLogDebug("%s", __FUNCTION__);
     s_cam1.titlePos = 3;
     dnotify(UPD_IMMEDIATE);
 }
@@ -2863,125 +2849,127 @@ MainFrameD::doEnablesForWtb()
 void
 MainFrameD::InitControls(Camera *cam)
 {
-  if (cam->titleOn)
+    if (!cam->titleOn)
+        cam->title.Clear();
+
     m_title->SetValue(cam->title);
 
-  switch (cam->titlePos) {
-  case 0: m_titleTL->SetValue(true); break;
-  case 1: m_titleBL->SetValue(true); break;
-  case 2: m_titleTR->SetValue(true); break;
-  case 3: m_titleBR->SetValue(true); break;
-  }
+    switch (cam->titlePos) {
+    case 0: m_titleTL->SetValue(true); break;
+    case 1: m_titleBL->SetValue(true); break;
+    case 2: m_titleTR->SetValue(true); break;
+    case 3: m_titleBR->SetValue(true); break;
+    }
 
-  m_senseUp->SetValue(cam->senseUp);
-  senseUpUpdated();
+    m_senseUp->SetValue(cam->senseUp);
+    senseUpUpdated();
 
-  if (cam->alcElc == 0) { // alc
-    m_alc->SetValue(cam->alc);
-    alcUpdated();
-    cam->elc = 0;
-    m_elc->SetValue(0);
-    elcUpdated();
-  }
-  else { // elc
-    m_elc->SetValue(cam->elc);
-    elcUpdated();
-    cam->alc = 0;
-    m_alc->SetValue(0);
-    alcUpdated();
-  }
+    if (cam->alcElc == 0) { // alc
+        m_alc->SetValue(cam->alc);
+        alcUpdated();
+        cam->elc = 0;
+        m_elc->SetValue(0);
+        elcUpdated();
+    }
+    else { // elc
+        m_elc->SetValue(cam->elc);
+        elcUpdated();
+        cam->alc = 0;
+        m_alc->SetValue(0);
+        alcUpdated();
+    }
 
-  // todo
+    // todo
 
-  //u8 blc; // 0=off 1=on 2=peak
-  //u8 blcPreset; // 0=off 1=on [when blc=on]
-  //u8 blcArea[6];
-  //u8 blcPeak; // 0=min 8=max
+    //u8 blc; // 0=off 1=on 2=peak
+    //u8 blcPreset; // 0=off 1=on [when blc=on]
+    //u8 blcArea[6];
+    //u8 blcPeak; // 0=min 8=max
 
-  if (cam->agc == 0) { // agc off
-    cam->agcManual = 0;
-    m_agcMan->SetValue(0); // "Off"
-    cam->agcLevel = 0;
-    m_agcAuto->SetValue(0);
-  }
-  else if (cam->agc == 1) { // agc on
-    cam->agcManual = 0;
-    m_agcMan->SetValue(0); // "Off"
-    m_agcAuto->SetValue(cam->agcLevel + 1); // 0=Off
-  }
-  else { // agc manual
-    m_agcMan->SetValue(cam->agcManual + 1); // 0=Off
-    cam->agcLevel = 0;
-    m_agcAuto->SetValue(0);
-  }
-  agcManUpdated();
-  agcAutoUpdated();
+    if (cam->agc == 0) { // agc off
+        cam->agcManual = 0;
+        m_agcMan->SetValue(0); // "Off"
+        cam->agcLevel = 0;
+        m_agcAuto->SetValue(0);
+    }
+    else if (cam->agc == 1) { // agc on
+        cam->agcManual = 0;
+        m_agcMan->SetValue(0); // "Off"
+        m_agcAuto->SetValue(cam->agcLevel + 1); // 0=Off
+    }
+    else { // agc manual
+        m_agcMan->SetValue(cam->agcManual + 1); // 0=Off
+        cam->agcLevel = 0;
+        m_agcAuto->SetValue(0);
+    }
+    agcManUpdated();
+    agcAutoUpdated();
 
-  if (cam->wtb != 2) { // atw or awc
-    m_atwBtn->SetValue(cam->wtb == 0);
-    m_awcBtn->SetValue(cam->wtb == 1);
-    m_wtbRbBtn->SetValue(false);
-    m_wtb3200Btn->SetValue(false);
-    m_wtb5600Btn->SetValue(false);
-  }
-  else { // man
-    m_atwBtn->SetValue(false);
-    m_awcBtn->SetValue(false);
-    m_wtbRbBtn->SetValue(cam->wtbMan == 2);
-    m_wtb3200Btn->SetValue(cam->wtbMan == 0);
-    m_wtb5600Btn->SetValue(cam->wtbMan == 1);
-  }
+    if (cam->wtb != 2) { // atw or awc
+        m_atwBtn->SetValue(cam->wtb == 0);
+        m_awcBtn->SetValue(cam->wtb == 1);
+        m_wtbRbBtn->SetValue(false);
+        m_wtb3200Btn->SetValue(false);
+        m_wtb5600Btn->SetValue(false);
+    }
+    else { // man
+        m_atwBtn->SetValue(false);
+        m_awcBtn->SetValue(false);
+        m_wtbRbBtn->SetValue(cam->wtbMan == 2);
+        m_wtb3200Btn->SetValue(cam->wtbMan == 0);
+        m_wtb5600Btn->SetValue(cam->wtbMan == 1);
+    }
 
-  m_wtbRed->SetValue(cam->wtbRed);
-  wtbRedUpdated();
-  m_wtbBlue->SetValue(cam->wtbBlue);
-  wtbBlueUpdated();
+    m_wtbRed->SetValue(cam->wtbRed);
+    wtbRedUpdated();
+    m_wtbBlue->SetValue(cam->wtbBlue);
+    wtbBlueUpdated();
 
-  doEnablesForWtb();
+    doEnablesForWtb();
 
-  m_toolBar->ToggleTool(ID_CROSS_BOX, cam->mask[0].on != 0);
+    m_toolBar->ToggleTool(ID_CROSS_BOX, cam->mask[0].on != 0);
 
-  m_toolBar->ToggleTool(ID_NEGATIVE, cam->neg == 1);
-  m_toolBar->ToggleTool(ID_H_REV, cam->hRev == 1);
-  m_toolBar->ToggleTool(ID_V_REV, cam->vRev == 1);
-  m_toolBar->ToggleTool(ID_FREEZE, cam->freeze == 1);
+    m_toolBar->ToggleTool(ID_NEGATIVE, cam->neg == 1);
+    m_toolBar->ToggleTool(ID_H_REV, cam->hRev == 1);
+    m_toolBar->ToggleTool(ID_V_REV, cam->vRev == 1);
+    m_toolBar->ToggleTool(ID_FREEZE, cam->freeze == 1);
 
-  m_priority->SetSelection(cam->priority);  // 0=agc 1=senseup
+    m_priority->SetSelection(cam->priority);  // 0=agc 1=senseup
 
-  m_gamma->SetValue(cam->gamma);
-  gammaUpdated();
+    m_gamma->SetValue(cam->gamma);
+    gammaUpdated();
 
-  m_apcH->SetValue(cam->apcH);
-  apcHUpdated();
+    m_apcH->SetValue(cam->apcH);
+    apcHUpdated();
 
-  m_apcV->SetValue(cam->apcV);
-  apcVUpdated();
+    m_apcV->SetValue(cam->apcV);
+    apcVUpdated();
 
-  m_coronagraph->SetValue(cam->coronagraph);
-  coronagraphUpdated();
+    m_coronagraph->SetValue(cam->coronagraph);
+    coronagraphUpdated();
 
-  m_toolBar->ToggleTool(ID_COLOR_BARS, cam->colorBars == 1);
+    m_toolBar->ToggleTool(ID_COLOR_BARS, cam->colorBars == 1);
 
-  if (cam->tec) {
-    m_tecLevel->SetValue(cam->tecLevel + 1); // 0 = Off
-  }
-  else {
-    cam->tecLevel = 0;
-    m_tecLevel->SetValue(0);
-  }
-  tecLevelUpdated();
+    if (cam->tec) {
+        m_tecLevel->SetValue(cam->tecLevel + 1); // 0 = Off
+    }
+    else {
+        cam->tecLevel = 0;
+        m_tecLevel->SetValue(0);
+    }
+    tecLevelUpdated();
 
-  m_dewRemoval->SetValue(cam->dewRemoval);
-  dewRemovalUpdated();
+    m_dewRemoval->SetValue(cam->dewRemoval);
+    dewRemovalUpdated();
 
-  if (cam->zoom) {
-    m_zoom->SetValue(cam->zoomLevel + 1); // 0 = Off
-  }
-  else {
-    cam->zoomLevel = 0;
-    m_zoom->SetValue(0);
-  }
-  zoomUpdated();
+    if (cam->zoom) {
+        m_zoom->SetValue(cam->zoomLevel + 1); // 0 = Off
+    }
+    else {
+        cam->zoomLevel = 0;
+        m_zoom->SetValue(0);
+    }
+    zoomUpdated();
 }
 
 void
@@ -3079,7 +3067,6 @@ _load_cam(const char *filename)
     if (ok) {
         _init_fixed_vals(&cam);
 	s_cam1 = cam;
-wxLogDebug("loadcam updated cam1");
 
 	_init_ctrl_vals();
 
@@ -3092,29 +3079,25 @@ wxLogDebug("loadcam updated cam1");
 void
 MainFrameD::dsClicked(wxCommandEvent& event)
 {
-  wxLogDebug("%s", __FUNCTION__);
-  _load_cam("dso.mcx");
+    _load_cam("dso.mcx");
 }
 
 void
 MainFrameD::plClicked(wxCommandEvent& event)
 {
-  wxLogDebug("%s", __FUNCTION__);
-  _load_cam("planetary.mcx");
+    _load_cam("planetary.mcx");
 }
 
 void
 MainFrameD::luClicked(wxCommandEvent& event)
 {
-  wxLogDebug("%s", __FUNCTION__);
-  _load_cam("lunar.mcx");
+    _load_cam("lunar.mcx");
 }
 
 void
 MainFrameD::solarClicked(wxCommandEvent& event)
 {
-  wxLogDebug("%s", __FUNCTION__);
-  _load_cam("solar.mcx");
+    _load_cam("solar.mcx");
 }
 
 void
@@ -3159,10 +3142,10 @@ MainFrameD::svClicked(wxCommandEvent& event)
 void
 MainFrameD::xbClicked(wxCommandEvent& event)
 {
-  bool on = m_toolBar->GetToolState(ID_CROSS_BOX);
-  for (unsigned int i = 0; i < 4; i++)
-      s_cam1.mask[i].on = on ? 1 : 0;
-  dnotify(UPD_IMMEDIATE);
+    bool on = m_toolBar->GetToolState(ID_CROSS_BOX);
+    for (unsigned int i = 0; i < 4; i++)
+        s_cam1.mask[i].on = on ? 1 : 0;
+    dnotify(UPD_IMMEDIATE);
 }
 
 void
@@ -3208,8 +3191,6 @@ MainFrameD::fzClicked(wxCommandEvent& event)
 void
 MainFrameD::ccClicked(wxCommandEvent& event)
 {
-    wxLogDebug("%s id=%d", __FUNCTION__, event.GetId());
-
     // set AGC Auto off
     {
 	m_agcAuto->SetValue(0);
@@ -3242,7 +3223,7 @@ MainFrameD::ccClicked(wxCommandEvent& event)
 void
 MainFrameD::sleepClicked(wxCommandEvent& event)
 {
-    wxLogDebug("%s id=%d", __FUNCTION__, event.GetId());
+    wxLogDebug("%s id=%d", __FUNCTION__);
 
     s_agc_wait_state = AGC_PARK_INIT;
     _do_camera_fsm();
@@ -3274,8 +3255,6 @@ AboutDialogD::LinkClicked(wxHtmlLinkEvent& event)
 void
 MainFrameD::AboutClicked(wxCommandEvent& event)
 {
-    wxLogDebug("%s id=%d", __FUNCTION__, event.GetId());
-
     AboutDialog *dlg = new AboutDialogD(this);
     dlg->m_html->SetPage(
 "<html>"
