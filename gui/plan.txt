@@ -1,8 +1,4 @@
 TODO
-  fix com port selection - disconnect, reconnect
-  bug:
-     read cam settings wtb went to 56k, should have been man r/b
-           => failed to read smry, time interval too short
   at startup, start agc timer if needed
   bug: slide to 128x, immediately start integration
   logging
@@ -18,6 +14,10 @@ TODO
   resend mcx message if not acked?
 
 done:
+  fix com port selection - disconnect, reconnect
+  bug:
+     read cam settings wtb went to 56k, should have been man r/b
+           => failed to read smry, time interval too short
   bug: read cam settings title = hi but title is off
   accept varios integration time formats  2m 2:30 2.5m
   better countdown timer status message format
