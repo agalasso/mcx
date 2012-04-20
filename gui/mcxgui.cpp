@@ -703,6 +703,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	m_apcV->Connect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( MainFrame::apcVScroll ), NULL, this );
 	m_atwBtn->Connect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::atwSelected ), NULL, this );
 	m_awcBtn->Connect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::awcSelected ), NULL, this );
+	m_awcSet->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( MainFrame::awcSetClicked ), NULL, this );
 	m_wtbRbBtn->Connect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::wtbRBSelected ), NULL, this );
 	m_wtb3200Btn->Connect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::wtb3200Selected ), NULL, this );
 	m_wtb5600Btn->Connect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::wtb5600Selected ), NULL, this );
@@ -865,6 +866,7 @@ MainFrame::~MainFrame()
 	m_apcV->Disconnect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( MainFrame::apcVScroll ), NULL, this );
 	m_atwBtn->Disconnect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::atwSelected ), NULL, this );
 	m_awcBtn->Disconnect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::awcSelected ), NULL, this );
+	m_awcSet->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( MainFrame::awcSetClicked ), NULL, this );
 	m_wtbRbBtn->Disconnect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::wtbRBSelected ), NULL, this );
 	m_wtb3200Btn->Disconnect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::wtb3200Selected ), NULL, this );
 	m_wtb5600Btn->Disconnect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( MainFrame::wtb5600Selected ), NULL, this );

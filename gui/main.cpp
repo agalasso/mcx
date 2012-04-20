@@ -268,7 +268,7 @@ struct Camera
     u8 coronagraph; // 1..0x12
     u8 colorBars; // 0=off 1=on
 
-    u8 tec; // 0=off 1=on
+    u8 tecOn; // 0=off 1=on
     u8 tecLevel; // 0..8 [when tec==on]
     u8 dewRemoval; // 0=10s 1=30s 2=60s
     u8 tecArea[6]; // [for tec==on]
@@ -353,7 +353,7 @@ _save_cam(const char *filename, const Camera *cam)
     F(coronagraph);
     F(colorBars);
 
-    F(tec);
+    F(tecOn);
     F(tecLevel);
     F(dewRemoval);
 
@@ -521,7 +521,7 @@ __load_cam(Camera *cam, const char *filename)
 	F(apcV);
 	F(coronagraph);
 	F(colorBars);
-	F(tec);
+	F(tecOn);
 	F(tecLevel);
 	F(dewRemoval);
 
@@ -838,180 +838,180 @@ _init_tec_area(Camera *cam)
 static void
 gen_cmds(const Camera& a, const Camera& b)
 {
-  // title
-  if (b.title != a.title) {
-      u8 buf[DATA_LEN - 1];
-      _gen_title(&buf[0], b.title.c_str());
-      emit2(0x10, 1, &buf[0], sizeof(buf));
-  }
+    // title
+    if (b.title != a.title) {
+        u8 buf[DATA_LEN - 1];
+        _gen_title(&buf[0], b.title.c_str());
+        emit2(0x10, 1, &buf[0], sizeof(buf));
+    }
 
-  // title on
-  if (b.titleOn != a.titleOn) {
-    emit2(0x10, 0, b.titleOn);
-  }
+    // title on
+    if (b.titleOn != a.titleOn) {
+        emit2(0x10, 0, b.titleOn);
+    }
 
-  // title pos
-  if (b.titlePos != a.titlePos) {
-    // set title pos
-    emit2(0x10, 3, b.titlePos);
-  }
+    // title pos
+    if (b.titlePos != a.titlePos) {
+        // set title pos
+        emit2(0x10, 3, b.titlePos);
+    }
 
-  // senseUp
-  if (b.senseUp != a.senseUp) {
-    // set senseUp
-    emit1(0x11, b.senseUp);
-  }
+    // senseUp
+    if (b.senseUp != a.senseUp) {
+        // set senseUp
+        emit1(0x11, b.senseUp);
+    }
 
-  // alc/elc
-  if (b.alcElc != a.alcElc) {
-    // set alcElc
-    emit1(0x12, b.alcElc);
-  }
+    // alc/elc
+    if (b.alcElc != a.alcElc) {
+        // set alcElc
+        emit1(0x12, b.alcElc);
+    }
 
-  if (b.alc != a.alc) {
-    // set alc
-    emit1(0x15, b.alc);
-  }
-  if (b.elc != a.elc) {
-    // set elc
-    emit1(0x16, b.elc);
-  }
+    if (b.alc != a.alc) {
+        // set alc
+        emit1(0x15, b.alc);
+    }
+    if (b.elc != a.elc) {
+        // set elc
+        emit1(0x16, b.elc);
+    }
 
-  if (b.blc != a.blc) {
-    // set blc
-    emit2(0x18, 0, b.blc);
-  }
-  if (b.blcPreset != a.blcPreset) {
-    // set blcPreset
-    emit2(0x18, 1, b.blcPreset);
-  }
-  if (memcmp(&b.blcArea[0], &a.blcArea[0], sizeof(a.blcArea)) != 0) {
-    // todo: set blcArea
-    emit1(0x19, &b.blcArea[0], sizeof(b.blcArea));
-  }
-  if (b.blcPeak != a.blcPeak) {
-    // set blcPeak
-    emit1(0x22, b.blcPeak);
-  }
+    if (b.blc != a.blc) {
+        // set blc
+        emit2(0x18, 0, b.blc);
+    }
+    if (b.blcPreset != a.blcPreset) {
+        // set blcPreset
+        emit2(0x18, 1, b.blcPreset);
+    }
+    if (memcmp(&b.blcArea[0], &a.blcArea[0], sizeof(a.blcArea)) != 0) {
+        // todo: set blcArea
+        emit1(0x19, &b.blcArea[0], sizeof(b.blcArea));
+    }
+    if (b.blcPeak != a.blcPeak) {
+        // set blcPeak
+        emit1(0x22, b.blcPeak);
+    }
 
-  if (b.agc != a.agc) {
-    // set agc
-    emit2(0x1a, 0, b.agc);
-  }
-  if (b.agcLevel != a.agcLevel) {
-    // set agcLevel
-    emit2(0x1a, 1, b.agcLevel);
-  }
-  if (b.agcManual != a.agcManual) {
-    // set agcManual
-    emit2(0x1a, 2, b.agcManual);
-  }
+    if (b.agc != a.agc) {
+        // set agc
+        emit2(0x1a, 0, b.agc);
+    }
+    if (b.agcLevel != a.agcLevel) {
+        // set agcLevel
+        emit2(0x1a, 1, b.agcLevel);
+    }
+    if (b.agcManual != a.agcManual) {
+        // set agcManual
+        emit2(0x1a, 2, b.agcManual);
+    }
 
-  if (b.wtb != a.wtb) {
-    // set wtb
-    emit2(0x1b, 0, b.wtb);
-  }
-  if (b.wtbMan != a.wtbMan) {
-    // set wtbMan
-    emit2(0x1b, 1, b.wtbMan);
-  }
-  if (b.wtbRed != a.wtbRed) {
-    // set wtbRed
-    emit2(0x1b, 2, b.wtbRed);
-  }
-  if (b.wtbBlue != a.wtbBlue) {
-    // set wtbBlue
-    emit2(0x1b, 3, b.wtbBlue);
-  }
+    if (b.wtb != a.wtb) {
+        // set wtb
+        emit2(0x1b, 0, b.wtb);
+    }
+    if (b.wtbMan != a.wtbMan) {
+        // set wtbMan
+        emit2(0x1b, 1, b.wtbMan);
+    }
+    if (b.wtbRed != a.wtbRed) {
+        // set wtbRed
+        emit2(0x1b, 2, b.wtbRed);
+    }
+    if (b.wtbBlue != a.wtbBlue) {
+        // set wtbBlue
+        emit2(0x1b, 3, b.wtbBlue);
+    }
 
-  if (b.sync != a.sync) {
-    emit2(0x1c, 0, b.sync);
-  }
+    if (b.sync != a.sync) {
+        emit2(0x1c, 0, b.sync);
+    }
 
-  for (unsigned int m = 0; m < 4; m++) {
-      if (b.mask[m].on != a.mask[m].on)
-	  emit2(0x1d, m, b.mask[m].on);
-      if (memcmp(&b.mask[m].area[0], &a.mask[m].area[0], sizeof(b.mask[m].area)) != 0)
-	  emit2(0x1d, 0x10 + m, &b.mask[m].area[0], sizeof(b.mask[m].area));
-  }
+    for (unsigned int m = 0; m < 4; m++) {
+        if (b.mask[m].on != a.mask[m].on)
+            emit2(0x1d, m, b.mask[m].on);
+        if (memcmp(&b.mask[m].area[0], &a.mask[m].area[0], sizeof(b.mask[m].area)) != 0)
+            emit2(0x1d, 0x10 + m, &b.mask[m].area[0], sizeof(b.mask[m].area));
+    }
 
-  if (b.neg != a.neg) {
-    // set neg
-    emit2(0x1d, 4, b.neg);
-  }
+    if (b.neg != a.neg) {
+        // set neg
+        emit2(0x1d, 4, b.neg);
+    }
 
-  if (b.hRev != a.hRev) {
-    // set hRev
-    emit2(0x1d, 5, b.hRev);
-  }
-  if (b.vRev != a.vRev) {
-    // set vRev
-    emit2(0x1d, 7, b.vRev);
-  }
+    if (b.hRev != a.hRev) {
+        // set hRev
+        emit2(0x1d, 5, b.hRev);
+    }
+    if (b.vRev != a.vRev) {
+        // set vRev
+        emit2(0x1d, 7, b.vRev);
+    }
 
-  if (b.freezeMode != a.freezeMode) {
-    // set freeze mode
-    emit2(0x1d, 9, b.freezeMode);
-  }
-  if (b.freeze != a.freeze) {
-    // set freeze
-    emit2(0x1d, 8, b.freeze);
-  }
+    if (b.freezeMode != a.freezeMode) {
+        // set freeze mode
+        emit2(0x1d, 9, b.freezeMode);
+    }
+    if (b.freeze != a.freeze) {
+        // set freeze
+        emit2(0x1d, 8, b.freeze);
+    }
 
-  if (b.priority != a.priority) {
-    // set priority
-    emit2(0x1d, 6, b.priority);
-  }
+    if (b.priority != a.priority) {
+        // set priority
+        emit2(0x1d, 6, b.priority);
+    }
 
-  if (b.gamma != a.gamma) {
-    // set gamma
-    emit2(0x1d, 0x14, b.gamma);
-  }
+    if (b.gamma != a.gamma) {
+        // set gamma
+        emit2(0x1d, 0x14, b.gamma);
+    }
 
-  if (b.apcH != a.apcH) {
-    // set apcH
-    emit3(0x1d, 0x15, 1, b.apcH);
-  }
-  if (b.apcV != a.apcV) {
-    // set apcV
-    emit3(0x1d, 0x15, 2, b.apcV);
-  }
+    if (b.apcH != a.apcH) {
+        // set apcH
+        emit3(0x1d, 0x15, 1, b.apcH);
+    }
+    if (b.apcV != a.apcV) {
+        // set apcV
+        emit3(0x1d, 0x15, 2, b.apcV);
+    }
 
-  if (b.coronagraph != a.coronagraph) {
-    // set coronagraph
-    emit2(0x1d, 0x16, b.coronagraph);
-  }
+    if (b.coronagraph != a.coronagraph) {
+        // set coronagraph
+        emit2(0x1d, 0x16, b.coronagraph);
+    }
 
-  if (b.colorBars != a.colorBars) {
-    // set colorBars
-    emit2(0x1d, 0x17, b.colorBars);
-  }
+    if (b.colorBars != a.colorBars) {
+        // set colorBars
+        emit2(0x1d, 0x17, b.colorBars);
+    }
 
-  if (b.tec != a.tec) {
-    // set tec
-    emit2(0x47, 0, b.tec);
-  }
-  if (b.tecLevel != a.tecLevel) {
-    // set tecLevel
-    emit2(0x47, 2, b.tecLevel);
-  }
-  if (b.dewRemoval != a.dewRemoval) {
-    // set dewRemoval
-    emit2(0x47, 3, b.dewRemoval);
-  }
-  if (memcmp(&b.tecArea[0], &a.tecArea[0], sizeof(a.tecArea)) != 0) {
-    // set tecArea
-    emit1(0x48, &b.tecArea[0], sizeof(b.tecArea));
-  }
+    if (b.tecOn != a.tecOn) {
+        // set tec
+        emit2(0x47, 0, b.tecOn);
+    }
+    if (b.tecLevel != a.tecLevel) {
+        // set tecLevel
+        emit2(0x47, 2, b.tecLevel);
+    }
+    if (b.dewRemoval != a.dewRemoval) {
+        // set dewRemoval
+        emit2(0x47, 3, b.dewRemoval);
+    }
+    if (memcmp(&b.tecArea[0], &a.tecArea[0], sizeof(a.tecArea)) != 0) {
+        // set tecArea
+        emit1(0x48, &b.tecArea[0], sizeof(b.tecArea));
+    }
 
-  if (b.zoom != a.zoom) {
-    // set zoom
-    emit2(0x1f, 0, b.zoom);
-  }
-  if (b.zoomLevel != a.zoomLevel) {
-    // set zoomLevel
-    emit2(0x1f, 1, b.zoomLevel);
-  }
+    if (b.zoom != a.zoom) {
+        // set zoom
+        emit2(0x1f, 0, b.zoom);
+    }
+    if (b.zoomLevel != a.zoomLevel) {
+        // set zoomLevel
+        emit2(0x1f, 1, b.zoomLevel);
+    }
 }
 
 enum {
@@ -1172,6 +1172,7 @@ public:
 
     void atwSelected(wxCommandEvent& event);
     void awcSelected(wxCommandEvent& event);
+    void awcSetClicked(wxCommandEvent& event);
     void wtbRBSelected(wxCommandEvent& event);
     void wtb3200Selected(wxCommandEvent& event);
     void wtb5600Selected(wxCommandEvent& event);
@@ -1370,7 +1371,7 @@ _handle_smry_4()
 static void
 _handle_smry_5()
 {
-    s_cam0.tec = s_fsm_response.data[1];
+    s_cam0.tecOn = s_fsm_response.data[1];
     //  s_cam0.tecPreset = s_fsm_response.data[2]; ???
     s_cam0.tecLevel = s_fsm_response.data[3];
     s_cam0.tecArea[0] = s_fsm_response.data[4];
@@ -2700,33 +2701,33 @@ MainFrameD::zoomScroll(wxScrollEvent& event)
 void
 MainFrameD::tecLevelUpdated()
 {
-  const char *sval[] = { "Off", "0", "1", "2", "3", "4", "5", "6", "7", "8", };
-  int const p = m_tecLevel->GetValue();
-  wxASSERT(p >= 0 && p < lengthof(sval));
-  m_tecLevelVal->SetLabel(sval[p]);
+    const char *sval[] = { "Off", "0", "1", "2", "3", "4", "5", "6", "7", "8", };
+    int const p = m_tecLevel->GetValue();
+    wxASSERT(p >= 0 && p < lengthof(sval));
+    m_tecLevelVal->SetLabel(sval[p]);
 }
 
 void
 MainFrameD::tecLevelScroll(wxScrollEvent& event)
 {
-  tecLevelUpdated();
+    tecLevelUpdated();
 
-  int const val[] = { -1, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+    int const val[] = { -1, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
 
-  // do not use event.GetPosition() since we send fake events to this
-  // control
-  int const p = m_tecLevel->GetValue();
-  wxASSERT(p >= 0 && p < lengthof(val));
+    // do not use event.GetPosition() since we send fake events to this
+    // control
+    int const p = m_tecLevel->GetValue();
+    wxASSERT(p >= 0 && p < lengthof(val));
 
-  if (p == 0) {
-    s_cam1.tec = 0; // off
-    s_cam1.tecLevel = 0;
-  }
-  else {
-    s_cam1.tec = 1; // on
-    s_cam1.tecLevel = val[p];
-  }
-  dnotify(UPD_DEFER);
+    if (p == 0) {
+        s_cam1.tecOn = 0; // off
+        s_cam1.tecLevel = 0;
+    }
+    else {
+        s_cam1.tecOn = 1; // on
+        s_cam1.tecLevel = val[p];
+    }
+    dnotify(UPD_DEFER);
 }
 
 void
@@ -2950,7 +2951,7 @@ MainFrameD::InitControls(Camera *cam)
 
     m_toolBar->ToggleTool(ID_COLOR_BARS, cam->colorBars == 1);
 
-    if (cam->tec) {
+    if (cam->tecOn) {
         m_tecLevel->SetValue(cam->tecLevel + 1); // 0 = Off
     }
     else {
@@ -2999,6 +3000,14 @@ MainFrameD::awcSelected(wxCommandEvent& event)
 
     doEnablesForWtb();
     s_cam1.wtb = 1; // awc
+    dnotify(UPD_IMMEDIATE);
+}
+
+void
+MainFrameD::awcSetClicked(wxCommandEvent& event)
+{
+    // todo: confirm with Rock, is this right?
+    emit2(0x1b, 4, 1);
     dnotify(UPD_IMMEDIATE);
 }
 
@@ -3262,7 +3271,7 @@ MainFrameD::AboutClicked(wxCommandEvent& event)
 "<br>"
 "<br>"
 "<center><h1>MallinCam Control</h1></center>"
-"<center>Version 0.1</center>"
+"<center>Version " VERSION "</center>"
 "<br>"
 "<br>"
 "<br>"

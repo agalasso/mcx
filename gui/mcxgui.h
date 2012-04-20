@@ -148,6 +148,7 @@ class MainFrame : public wxFrame
 		virtual void apcVScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void atwSelected( wxCommandEvent& event ) { event.Skip(); }
 		virtual void awcSelected( wxCommandEvent& event ) { event.Skip(); }
+		virtual void awcSetClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void wtbRBSelected( wxCommandEvent& event ) { event.Skip(); }
 		virtual void wtb3200Selected( wxCommandEvent& event ) { event.Skip(); }
 		virtual void wtb5600Selected( wxCommandEvent& event ) { event.Skip(); }

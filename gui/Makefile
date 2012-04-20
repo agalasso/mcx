@@ -1,3 +1,5 @@
+VERSION = 0.1
+
 UNAME_O = $(shell uname -o)
 ifeq ($(UNAME_O), Msys)
   OS := win
@@ -8,17 +10,20 @@ ifeq ($(UNAME_O), Msys)
 else ifeq ($(UNAME_O), GNU/Linux)
   OS := linux
   WX := /opt/wxWidgets-2.9.3
+  EXTRA_CXXFLAGS := -fPIC
+else
+  $(error "target $(UNAME_O)?")
 endif
 
 WXCONFIG := $(WX)/bin/wx-config
-CXXFLAGS := `$(WXCONFIG) --cxxflags` -fPIC -g
+CXXFLAGS = `$(WXCONFIG) --cxxflags` $(EXTRA_CXXFLAGS) -g -DVERSION=\"$(VERSION)\"
 WXLIBS := `$(WXCONFIG) --libs --debug=yes`
 TARGET := $(OS)
 
 all: mcx$(EXEEXT)
 
 clean:
-	 rm -f mcx$(EXEEXT) *.o mcx.res
+	 rm -f mcx$(EXEEXT) *.o mcx.res *.zip
 
 fb:
 	/home/andy/Incoming/wxformbuilder/trunk/output/bin/wxformbuilder MCXx.fbp
@@ -46,3 +51,6 @@ mcx$(EXEEXT): main.o mcxgui.o crc16.o mcxcomm.o mcxcomm_$(TARGET).o $(MCX_RES)
 
 run: mcx$(EXEEXT)
 	LD_LIBRARY_PATH=$(WX)/lib ./mcx$(EXEEXT)
+
+zip: mcx$(EXEEXT) dso.mcx lunar.mcx planetary.mcx solar.mcx
+	zip mcx-$(VERSION) $^
