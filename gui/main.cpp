@@ -58,6 +58,8 @@ enum {
   COMMAND_DELAY_MS = 175,
   INT_CAPTURE_DELAY_MS = 175,
 
+  MAX_RETRIES = 10,
+
   MINUTES = 60 * 1000,
 
   AGC_WAIT_MS = 3 * MINUTES, // how long to wait after agc change
@@ -71,6 +73,8 @@ enum CameraState {
   CAM_DISCOVERING,
   CAM_READING1,
   CAM_READING2,
+  CAM_READING3,
+  CAM_READING4,
   CAM_SENDING1,
   CAM_SENDING2,
   CAM_DELAY,
@@ -112,6 +116,7 @@ static void (*s_fsm_cam_uptodate_cb)();
 static wxTimer *s_deferred_evt_timer;
 static wxTimer *s_fsm_timer;
 static bool s_fsm_timeout;
+static bool s_fsm_send_cnt;
 static wxTimer *s_cmd_delay_timer;
 static bool s_cmd_delay_expired;
 static ReaderThread *s_reader;
@@ -1462,6 +1467,8 @@ _cam_disconnected(bool *done)
 static void
 _cam_discover(bool *done)
 {
+    // Start camera discovery by sending ENQ
+
     s_fsm_got_ack = false;
     s_fsm_got_response = false;
     mcxcomm_send_enq();
@@ -1527,7 +1534,7 @@ static u8 DISCO[] = {
 #undef X
 
 static void
-_send_next_smry_cmd()
+_send_smry_cmd()
 {
     msg req;
 
@@ -1559,11 +1566,12 @@ _cam_discovering(bool *done)
         s_fsm_timer->Stop();
 
         s_fsm_next_smry = 0;
-        _send_next_smry_cmd();
+        _send_smry_cmd();
 
         s_camera_state = CAM_READING1;
     }
     else if (s_fsm_timeout) {
+        // Go back and send another ENQ. Repeat indefinitely.
         s_camera_state = CAM_DISCOVER;
     }
     else
@@ -1573,19 +1581,38 @@ _cam_discovering(bool *done)
 static void
 _cam_reading1(bool *done)
 {
+    // setup for sending a summary-read command
+
+    s_fsm_send_cnt = 0;
+    s_camera_state = CAM_READING2;
+}
+
+static void
+_cam_reading2(bool *done)
+{
+    // waiting for ack after having sent a summary-read request
+
     if (s_fsm_got_ack) {
         // restart timer for response
         s_fsm_timeout = false;
         s_fsm_timer->Start(RESPONSE_TIMEOUT_MS, wxTIMER_ONE_SHOT);
-        s_camera_state = CAM_READING2;
+        s_camera_state = CAM_READING3;
         *done = true;
     }
     else if (s_fsm_got_response) {
-        // probably a NAK
-        s_camera_state = CAM_READING2;
+        // probably a NAK? todo - handle it
+        s_camera_state = CAM_READING3;
     }
     else if (s_fsm_timeout) {
-        s_camera_state = CAM_DISCOVER;
+        if (++s_fsm_send_cnt < MAX_RETRIES) {
+            wxLogDebug("timed-out waiting for ACK after smry-read %u, resending %u", s_fsm_next_smry, s_fsm_send_cnt);
+            _send_smry_cmd();
+            *done = true;
+        }
+        else {
+            wxLogDebug("timed-out waiting for ACK after smry-read %u, RESDISCOVER", s_fsm_next_smry);
+            s_camera_state = CAM_DISCOVER;
+        }
     }
     else
         *done = true;
@@ -1600,9 +1627,16 @@ _init_cmds_done()
 }
 
 static void
-_cam_reading2(bool *done)
+_cam_reading3(bool *done)
 {
-    //  wxLogDebug("dostate %s", __FUNCTION__);
+    s_fsm_send_cnt = 0;
+    s_camera_state = CAM_READING4;
+}
+
+static void
+_cam_reading4(bool *done)
+{
+    // waiting for summary-read response
 
     if (s_fsm_got_response) {
 
@@ -1610,12 +1644,13 @@ _cam_reading2(bool *done)
 
         mcxcomm_send_ack();
 
-	wxMilliSleep(COMMAND_DELAY_MS * 2); // todo needed? make async?
+        // need an extended delay between summary-read requests
+	wxMilliSleep(COMMAND_DELAY_MS * 2); // todo: make async?
 
         _handle_smry();
 
         if (++s_fsm_next_smry < 11) {
-            _send_next_smry_cmd();
+            _send_smry_cmd();
             s_camera_state = CAM_READING1;
             *done = true;
         }
@@ -1635,7 +1670,16 @@ _cam_reading2(bool *done)
         }
     }
     else if (s_fsm_timeout) {
-        s_camera_state = CAM_DISCOVER;
+        if (++s_fsm_send_cnt < MAX_RETRIES) {
+            wxLogDebug("timed-out waiting for response after smry-read %u, resending %u", s_fsm_next_smry, s_fsm_send_cnt);
+            _send_smry_cmd();
+            s_camera_state = CAM_READING2;
+            *done = true;
+        }
+        else {
+            wxLogDebug("timed-out waiting for response after smry-read %u, RESDISCOVER", s_fsm_next_smry);
+            s_camera_state = CAM_DISCOVER;
+        }
     }
     else {
         *done = true;
@@ -2188,6 +2232,8 @@ ___do_camera_fsm()
     case CAM_DISCOVERING:   _cam_discovering(&done);   break;
     case CAM_READING1:      _cam_reading1(&done);      break;
     case CAM_READING2:      _cam_reading2(&done);      break;
+    case CAM_READING3:      _cam_reading3(&done);      break;
+    case CAM_READING4:      _cam_reading4(&done);      break;
     case CAM_SENDING1:      _cam_sending1(&done);      break;
     case CAM_SENDING2:      _cam_sending2(&done);      break;
     case CAM_DELAY:         _cam_delay(&done);         break;
