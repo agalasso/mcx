@@ -1,6 +1,5 @@
 TODO
   bugs:
-     integration gets stuck looping receiving garbage
      stop didn't stop when re-sending
   bug: slide to 128x, immediately start integration
   logging
@@ -14,6 +13,7 @@ TODO
      0x20,0 "Exit item, PRESET setting"  - revert to factory defaults
 
 done:
+  integration gets stuck looping receiving garbage
   awc set
   resend mcx message if not acked?
   load saved title
