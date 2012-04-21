@@ -1,19 +1,24 @@
 TODO
-  at startup, start agc timer if needed
+  bugs:
+     integration gets stuck looping receiving garbage
+     stop didn't stop when re-sending
   bug: slide to 128x, immediately start integration
   logging
   installer - win
   installer - linux
   resolve COMMAND_DELAY_MS vs INT_CAPTURE_DELAY_MS - test it
   blc
-  disable controls disable labels to make more obvious?
   save settings to camera?
      0x1e   "Exit item, SAVE setting"    - save to camera
   restore factory defaults
      0x20,0 "Exit item, PRESET setting"  - revert to factory defaults
-  resend mcx message if not acked?
 
 done:
+  awc set
+  resend mcx message if not acked?
+  load saved title
+  at startup, start agc timer if needed
+  disable controls disable labels to make more obvious?
   fix com port selection - disconnect, reconnect
   bug:
      read cam settings wtb went to 56k, should have been man r/b

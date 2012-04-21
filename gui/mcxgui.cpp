@@ -102,10 +102,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	senseUpSizer->Add( m_senseUp, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_senseUpVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_senseUpVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxSize( 25,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_senseUpVal->Wrap( -1 );
-	m_senseUpVal->SetMinSize( wxSize( 20,-1 ) );
-	
 	senseUpSizer->Add( m_senseUpVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	
@@ -126,10 +124,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	bSizer9->Add( m_alc, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_alcVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_alcVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxSize( 60,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_alcVal->Wrap( -1 );
-	m_alcVal->SetMinSize( wxSize( 20,-1 ) );
-	
 	bSizer9->Add( m_alcVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	
@@ -147,10 +143,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	bSizer10->Add( m_elc, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_elcVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_elcVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxSize( 25,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_elcVal->Wrap( -1 );
-	m_elcVal->SetMinSize( wxSize( 20,-1 ) );
-	
 	bSizer10->Add( m_elcVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	
@@ -198,10 +192,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	bSizer101->Add( m_agcMan, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_agcManVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_agcManVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxSize( 25,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_agcManVal->Wrap( -1 );
-	m_agcManVal->SetMinSize( wxSize( 20,-1 ) );
-	
 	bSizer101->Add( m_agcManVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	
@@ -219,10 +211,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	bSizer11->Add( m_agcAuto, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_agcAutoVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_agcAutoVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxSize( 25,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_agcAutoVal->Wrap( -1 );
-	m_agcAutoVal->SetMinSize( wxSize( 20,-1 ) );
-	
 	bSizer11->Add( m_agcAutoVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	
@@ -246,10 +236,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	bSizer12->Add( m_apcH, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_apcHVal = new wxStaticText( this, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_apcHVal = new wxStaticText( this, wxID_ANY, wxT("0"), wxDefaultPosition, wxSize( 25,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_apcHVal->Wrap( -1 );
-	m_apcHVal->SetMinSize( wxSize( 20,-1 ) );
-	
 	bSizer12->Add( m_apcHVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	
@@ -267,10 +255,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	bSizer121->Add( m_apcV, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_apcVVal = new wxStaticText( this, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_apcVVal = new wxStaticText( this, wxID_ANY, wxT("0"), wxDefaultPosition, wxSize( 25,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_apcVVal->Wrap( -1 );
-	m_apcVVal->SetMinSize( wxSize( 20,-1 ) );
-	
 	bSizer121->Add( m_apcVVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	
@@ -349,10 +335,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	bSizer23->Add( m_wtbRed, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_wtbRedVal = new wxStaticText( this, wxID_ANY, wxT("0"), wxDefaultPosition, wxSize( -1,-1 ), 0|wxSIMPLE_BORDER );
+	m_wtbRedVal = new wxStaticText( this, wxID_ANY, wxT("0"), wxDefaultPosition, wxSize( 25,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_wtbRedVal->Wrap( -1 );
-	m_wtbRedVal->SetMinSize( wxSize( 20,-1 ) );
-	
 	bSizer23->Add( m_wtbRedVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	
@@ -374,10 +358,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	bSizer231->Add( m_wtbBlue, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_wtbBlueVal = new wxStaticText( this, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_wtbBlueVal = new wxStaticText( this, wxID_ANY, wxT("0"), wxDefaultPosition, wxSize( 25,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_wtbBlueVal->Wrap( -1 );
-	m_wtbBlueVal->SetMinSize( wxSize( 20,-1 ) );
-	
 	bSizer231->Add( m_wtbBlueVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	
@@ -407,10 +389,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	bSizer201->Add( m_tecLevel, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_tecLevelVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_tecLevelVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxSize( 25,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_tecLevelVal->Wrap( -1 );
-	m_tecLevelVal->SetMinSize( wxSize( 20,-1 ) );
-	
 	bSizer201->Add( m_tecLevelVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	
@@ -428,10 +408,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	bSizer211->Add( m_dewRemoval, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_dewRemovalVal = new wxStaticText( this, wxID_ANY, wxT("60"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_dewRemovalVal = new wxStaticText( this, wxID_ANY, wxT("60"), wxDefaultPosition, wxSize( 25,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_dewRemovalVal->Wrap( -1 );
-	m_dewRemovalVal->SetMinSize( wxSize( 20,-1 ) );
-	
 	bSizer211->Add( m_dewRemovalVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	
@@ -455,10 +433,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	gammaSizer->Add( m_gamma, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_gammaVal = new wxStaticText( this, wxID_ANY, wxT("0.45"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_gammaVal = new wxStaticText( this, wxID_ANY, wxT("0.45"), wxDefaultPosition, wxSize( 40,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_gammaVal->Wrap( -1 );
-	m_gammaVal->SetMinSize( wxSize( 30,-1 ) );
-	
 	gammaSizer->Add( m_gammaVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	
@@ -476,10 +452,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	zoomSizer->Add( m_zoom, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_zoomVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_zoomVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxSize( 25,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_zoomVal->Wrap( -1 );
-	m_zoomVal->SetMinSize( wxSize( 20,-1 ) );
-	
 	zoomSizer->Add( m_zoomVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	
@@ -497,10 +471,8 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	coronagraphSizer->Add( m_coronagraph, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_coronagraphVal = new wxStaticText( this, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, 0|wxSIMPLE_BORDER );
+	m_coronagraphVal = new wxStaticText( this, wxID_ANY, wxT("0"), wxDefaultPosition, wxSize( 25,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_coronagraphVal->Wrap( -1 );
-	m_coronagraphVal->SetMinSize( wxSize( 20,-1 ) );
-	
 	coronagraphSizer->Add( m_coronagraphVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
 	

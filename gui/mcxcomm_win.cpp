@@ -2,6 +2,7 @@
 #ifndef WX_PRECOMP
 # include "wx/wx.h"
 #endif
+
 #include "mcxcomm.h"
 
 #define SERIALPORT_NAME_LEN 32
@@ -52,8 +53,9 @@ struct SerialPort
     SerialPort_DCS m_dcs;
     char m_devname[SERIALPORT_NAME_LEN];
 
-    HANDLE fd;
-    OVERLAPPED m_ov;
+    HANDLE m_fd;
+    OVERLAPPED m_ov_rd;
+    OVERLAPPED m_ov_wr;
 
     int OpenDevice(const char *devname, const SerialPort_DCS& dcs);
 
@@ -69,28 +71,22 @@ public:
     SerialPort();
     ~SerialPort();
 
-    int Open( const char* portname, int baudrate,
-              const char* protocol = "8N1",
-              FlowControl flowControl = NoFlowControl );
-//    int Open( int portnumber, int baudrate,
-//              const char* protocol = "8N1",
-//              FlowControl flowControl = NoFlowControl );
-
-//    int Open(const char *devname, SerialPort_DCS *dcs = 0) {
-//        return OpenDevice(devname, dcs);
-//    };
+    int Open(const char *portname, int baudrate,
+             const char *protocol = "8N1",
+             FlowControl flowControl = NoFlowControl);
 
     void Close();
 
-    int Read(char* buf,size_t len);
-    int Write(char* buf,size_t len);
+    ssize_t Read(void *buf, size_t len);
+    bool Write(const void *buf, size_t len);
 };
 
 SerialPort::SerialPort()
 {
     m_devname[0] = '\0';
-    memset( &m_ov, 0, sizeof( OVERLAPPED ) );
-    fd = INVALID_HANDLE_VALUE;
+    m_fd = INVALID_HANDLE_VALUE;
+    memset(&m_ov_rd, 0, sizeof(m_ov_rd));
+    memset(&m_ov_wr, 0, sizeof(m_ov_wr));
 }
 
 SerialPort::~SerialPort()
@@ -101,16 +97,17 @@ SerialPort::~SerialPort()
 void
 SerialPort::Close()
 {
-    if (fd != INVALID_HANDLE_VALUE) {
-        CloseHandle(m_ov.hEvent);
-        CloseHandle(fd);
-        fd = INVALID_HANDLE_VALUE;
+    if (m_fd != INVALID_HANDLE_VALUE) {
+        CloseHandle(m_ov_rd.hEvent);
+        CloseHandle(m_ov_wr.hEvent);
+        CloseHandle(m_fd);
+        m_fd = INVALID_HANDLE_VALUE;
     }
 }
 
 int
-SerialPort::Open(const char* portname, int baudrate,
-                 const char* protocol,
+SerialPort::Open(const char *portname, int baudrate,
+                 const char *protocol,
                  FlowControl flowControl)
 {
     SerialPort_DCS dcs;
@@ -118,7 +115,7 @@ SerialPort::Open(const char* portname, int baudrate,
     dcs.baud = baudrate;
 
     // default wordlen is 8
-    if (( protocol[0] >= '5') && (protocol[0] <= '8'))
+    if ((protocol[0] >= '5') && (protocol[0] <= '8'))
         dcs.wordlen = protocol[0] - '0';
     else
         return -1;
@@ -127,13 +124,12 @@ SerialPort::Open(const char* portname, int baudrate,
     // character specifies the data bits (5...8), the second
     // the parity (None,Odd,Even,Mark,Space).
     // The third character defines the stopbit (1...2).
-    switch( protocol[ 1 ] ) {
+    switch (protocol[1]) {
     case 'N': case 'n': dcs.parity = ParityNone; break;
     case 'O': case 'o': dcs.parity = ParityOdd; break;
     case 'E': case 'e': dcs.parity = ParityEven; break;
     case 'M': case 'm': dcs.parity = ParityMark; break;
     case 'S': case 's': dcs.parity = ParitySpace; break;
-        // all other parameters cause an error!
     default: return -1;
     }
     // default stopbits is 1
@@ -151,50 +147,49 @@ SerialPort::Open(const char* portname, int baudrate,
 }
 
 int
-SerialPort::OpenDevice(const char* devname, const SerialPort_DCS& dcs)
+SerialPort::OpenDevice(const char *devname, const SerialPort_DCS& dcs)
 {
     m_dcs = dcs;
 
-    fd = CreateFileA(devname,	// device name
-                    GENERIC_READ | GENERIC_WRITE,	// O_RDWR
-                    0,		// not shared
-                    NULL,	// default value for object security ?!?
-                    OPEN_EXISTING, // file (device) exists
-                    FILE_FLAG_OVERLAPPED,	// asynchron handling
-                    NULL); // no more handle flags
+    m_fd = CreateFileA(devname,
+                       GENERIC_READ | GENERIC_WRITE,
+                       0,		// not shared
+                       NULL,
+                       OPEN_EXISTING,
+                       FILE_FLAG_OVERLAPPED,
+                       NULL);
 
-    if (fd == INVALID_HANDLE_VALUE) {
-wxLogDebug("%s CreateFile(%s) returned invalid file handle",__FUNCTION__,devname);
+    if (m_fd == INVALID_HANDLE_VALUE) {
+wxLogDebug("%s CreateFile(%s) returned invalid file handle", __FUNCTION__, devname);
         return -1;
     }
 
     // save the device name
-    strncpy(m_devname,(char*)devname,sizeof(m_devname));
-    // we write an eos to avoid a buffer overflow
+    strncpy(m_devname, devname, sizeof(m_devname));
     m_devname[sizeof(m_devname)-1] = '\0';
 
     // device control block
     DCB dcb;
-    memset(&dcb,0,sizeof(dcb));
+    memset(&dcb, 0, sizeof(dcb));
     dcb.DCBlength = sizeof(dcb);
     dcb.BaudRate = m_dcs.baud;
     dcb.fBinary = 1;
 
-    // Specifies whether the CTS (clear-to-send) signal is monitored 
-    // for output flow control. If this member is TRUE and CTS is turned
-    // off, output is suspended until CTS is sent again.
+    // Specifies whether the CTS (clear-to-send) signal is monitored for
+    // output flow control. If this member is TRUE and CTS is turned off,
+    // output is suspended until CTS is sent again.
     dcb.fOutxCtsFlow = m_dcs.rtscts;
 
-    // Specifies the DTR (data-terminal-ready) flow control. 
+    // Specifies the DTR (data-terminal-ready) flow control.
     // This member can be one of the following values:
-    // DTR_CONTROL_DISABLE   Disables the DTR line when the device is 
-    //                       opened and leaves it disabled. 
-    // DTR_CONTROL_ENABLE    Enables the DTR line when the device is 
-    //                       opened and leaves it on. 
-    // DTR_CONTROL_HANDSHAKE Enables DTR handshaking. If handshaking is 
+    // DTR_CONTROL_DISABLE   Disables the DTR line when the device is
+    //                       opened and leaves it disabled.
+    // DTR_CONTROL_ENABLE    Enables the DTR line when the device is
+    //                       opened and leaves it on.
+    // DTR_CONTROL_HANDSHAKE Enables DTR handshaking. If handshaking is
     //                       enabled, it is an error for the application
-    //                       to adjust the line by using the 
-    //                       EscapeCommFunction function.  
+    //                       to adjust the line by using the
+    //                       EscapeCommFunction function.
     dcb.fDtrControl = DTR_CONTROL_DISABLE;
 
     // Specifies the RTS flow control. If this value is zero, the
@@ -212,14 +207,15 @@ wxLogDebug("%s CreateFile(%s) returned invalid file handle",__FUNCTION__,devname
     //                       full. If handshaking is enabled, it is an
     //                       error for the application to adjust the
     //                       line by using the EscapeCommFunction function.
-    // RTS_CONTROL_TOGGLE    Specifies that the RTS line will be high if 
+    // RTS_CONTROL_TOGGLE    Specifies that the RTS line will be high if
     //                       bytes are available for transmission. After
     //                       all buffered bytes have been send, the RTS
     //                       line will be low.
-    if(m_dcs.rtscts) dcb.fRtsControl = RTS_CONTROL_HANDSHAKE;
-    else {
+    if (m_dcs.rtscts)
+        dcb.fRtsControl = RTS_CONTROL_HANDSHAKE;
+    else
         dcb.fRtsControl = RTS_CONTROL_DISABLE;
-    }
+
     // Specifies the XON/XOFF flow control.
     // If fOutX is true (the default is false), transmission stops when the
     // XOFF character is received and starts again, when the XON character
@@ -242,86 +238,104 @@ wxLogDebug("%s CreateFile(%s) returned invalid file handle",__FUNCTION__,devname
     dcb.XoffLim = (SERIALPORT_BUFSIZE >> 2) * 3;
 
     // parity
-    switch( m_dcs.parity ) {
-
+    switch (m_dcs.parity) {
     case ParityOdd: dcb.Parity = ODDPARITY; break;
     case ParityEven: dcb.Parity = EVENPARITY; break;
     case ParityMark: dcb.Parity = MARKPARITY; break;
     case ParitySpace: dcb.Parity = SPACEPARITY; break;
     default: dcb.Parity = NOPARITY;
-
     }
 
     // stopbits
-    if(m_dcs.stopbits == 2) dcb.StopBits = TWOSTOPBITS;
-    else dcb.StopBits = ONESTOPBIT;
+    if (m_dcs.stopbits == 2)
+        dcb.StopBits = TWOSTOPBITS;
+    else
+        dcb.StopBits = ONESTOPBIT;
     // wordlen, valid values are 5,6,7,8
     dcb.ByteSize = m_dcs.wordlen;
 
-    if(!SetCommState(fd,&dcb))
+    if(!SetCommState(m_fd, &dcb))
         return -2;
 
-    // create event for overlapped I/O
-    // we need a event object, which inform us about the
-    // end of an operation (here reading device)
-    m_ov.hEvent = CreateEvent(NULL,// LPSECURITY_ATTRIBUTES lpsa
-                              TRUE, // BOOL fManualReset 
-                              TRUE, // BOOL fInitialState
-                              NULL); // LPTSTR lpszEventName
-    if(m_ov.hEvent == INVALID_HANDLE_VALUE) {
+    m_ov_rd.hEvent = CreateEvent(NULL,// LPSECURITY_ATTRIBUTES lpsa
+                                 FALSE, // BOOL fManualReset
+                                 FALSE, // BOOL fInitialState
+                                 NULL); // LPTSTR lpszEventName
+    if (m_ov_rd.hEvent == INVALID_HANDLE_VALUE)
         return -3;
-    }
 
-    COMMTIMEOUTS cto = {MAXDWORD,0,0,0,0};
-    if(!SetCommTimeouts(fd,&cto))
+    m_ov_wr.hEvent = CreateEvent(NULL,// LPSECURITY_ATTRIBUTES lpsa
+                                 FALSE, // BOOL fManualReset
+                                 FALSE, // BOOL fInitialState
+                                 NULL); // LPTSTR lpszEventName
+    if (m_ov_wr.hEvent == INVALID_HANDLE_VALUE)
+        return -3;
+
+    COMMTIMEOUTS cto;
+
+    // Arrange for ReadFile to return in 1500 ms
+    cto.ReadIntervalTimeout = MAXDWORD;
+    cto.ReadTotalTimeoutMultiplier = 0;
+    cto.ReadTotalTimeoutConstant = 1500;
+
+    // no write timeouts
+    cto.WriteTotalTimeoutMultiplier = 0;
+    cto.WriteTotalTimeoutConstant = 0;
+
+    if (!SetCommTimeouts(m_fd, &cto))
         return -5;
 
-    // for a better performance with win95/98 I increased the internal
-    // buffer to SERIALPORT_BUFSIZE (normal size is 1024, but this can 
-    // be a little bit to small, if you use a higher baudrate like 115200)
-    if(!SetupComm(fd,SERIALPORT_BUFSIZE,SERIALPORT_BUFSIZE))
+    if (!SetupComm(m_fd, SERIALPORT_BUFSIZE, SERIALPORT_BUFSIZE))
         return -6;
 
     return 0;
 }
 
-int
-SerialPort::Read(char* buf, size_t len)
+ssize_t
+SerialPort::Read(void *buf, size_t len)
 {
-    DWORD read;
+    BOOL ok = ReadFile(m_fd, buf, len, NULL, &m_ov_rd);
 
-    if (ReadFile(fd, buf, len, &read, &m_ov))
-        return read;
+    if (!ok && GetLastError() != ERROR_IO_PENDING) {
+        wxLogDebug("%s: ReadFile failed", __FUNCTION__);
+        return -1;
+    }
 
-    if (GetLastError() == ERROR_IO_PENDING)
-        return 0;
+    DWORD nread;
 
-    wxLogDebug("SerialPort read failed");
-    return -1;
+    ok = GetOverlappedResult(m_fd, &m_ov_rd, &nread, TRUE /*wait*/);
+    if (!ok) {
+        wxLogDebug("%s: GetOverlappedResult failed", __FUNCTION__);
+        return -1;
+    }
+
+    return nread;
 }
 
-int
-SerialPort::Write(char* buf,size_t len)
+bool
+SerialPort::Write(const void *buf, size_t len)
 {
-    DWORD write;
-    if (!WriteFile(fd,buf,len,&write,&m_ov)) {
-        if(GetLastError() != ERROR_IO_PENDING) {
-            wxLogDebug("SerialPort write failed");
-            return -1;
-        }
-        else {
-            // VERY IMPORTANT to flush the data out of the internal
-            // buffer
-            FlushFileBuffers(fd);
-            // first you must call GetOverlappedResult, then you
-            // get the REALLY transmitted count of bytes
-            if (!GetOverlappedResult(fd,&m_ov,&write,TRUE)) {
-                // ooops... something is going wrong
-                return write;
-            }
-        }
+    DWORD written;
+    BOOL ok = GetOverlappedResult(m_fd, &m_ov_wr, &written, FALSE /*no wait*/);
+    if (!ok && GetLastError() != ERROR_IO_INCOMPLETE) {
+        wxLogDebug("%s: GetOverlappedResult failed", __FUNCTION__);
+        return false;
     }
-    return write;
+
+    if (!ok) {
+        // prior write not finished, drop this one
+        wxLogDebug("%s: prior write not complete, dropping write", __FUNCTION__);
+        return false;
+    }
+
+    ok = WriteFile(m_fd, buf, len, NULL, &m_ov_wr);
+    if (!ok && GetLastError() != ERROR_IO_PENDING) {
+        wxLogDebug("%s: WriteFile failed", __FUNCTION__);
+        return false;
+    }
+
+    FlushFileBuffers(m_fd); // ignore error
+    return true;
 }
 
 static SerialPort *s_dev;
@@ -367,15 +381,8 @@ static bool
 _send1(char val)
 {
     wxLogDebug("%s 0x%x",__FUNCTION__,(unsigned int) val);
-    int tries = 0;
-    while (true) {
-        int ret = s_dev->Write(&val, sizeof(val));
-        if (ret == 1)
-            return true;
-        if (++tries >= 50)
-            return false;
-        wxMilliSleep(10);
-    }
+
+    return s_dev->Write(&val, sizeof(val));
 }
 
 bool
@@ -395,51 +402,31 @@ mcxcomm_send_msg(const msg& cmd)
 {
     wxLogDebug("%s %02x %02x %02x %02x %02x %02x",__FUNCTION__,cmd.stx,cmd.cmdrsp,cmd.ctrl,cmd.data[0], cmd.data[1], cmd.data[2]);
 
-    unsigned int tries = 0;
-    const char *p = (const char *) &cmd;
-    unsigned int rem = sizeof(cmd);
-    while (rem > 0) {
-        int n = s_dev->Write(const_cast<char *>(p), rem);
-        if (n < 0) {
-            wxLogDebug("SerialPort write failed");
-            return false;
-        }
-        if (n == 0) {
-            if (++tries >= 50) {
-                wxLogDebug("SerialPort write timed-out");
-                return false;
-            }
-            wxMilliSleep(10);
-            continue;
-        }
-        p += n;
-        rem -= n;
-    }
-    return true;
+    return s_dev->Write(&cmd, sizeof(cmd));
 }
 
 static bool
-_read_n(void *buf, size_t n, const wxStopWatch& timer, unsigned int timeout_ms, bool *err)
+_read_n(void *buf, size_t n, bool *err)
 {
     char *p = (char *) buf;
-    unsigned int rem = (unsigned int) n;
+    size_t rem = n;
     while (rem > 0) {
-        int n = s_dev->Read(p, rem);
-        if (n < 0) {
+        ssize_t ret = s_dev->Read(p, rem);
+        if (ret == -1) {
+            wxLogDebug("%s read failed",__FUNCTION__);
             *err = true;
             return false;
         }
-        if (n == 0) {
-            if (timer.Time() > timeout_ms) {
-                *err = false;
-                return false;
-            }
-            wxMilliSleep(10);
-            continue;
+        else if (ret == 0) {
+            if (rem < n)
+                wxLogDebug("%s read timed out %zu/%zu",__FUNCTION__, n - rem, n);
+            *err = false;
+            return false;
         }
-        p += n;
-        rem -= n;
+        p += ret;
+        rem -= ret;
     }
+
     *err = false;
     return true;
 }
@@ -447,18 +434,23 @@ _read_n(void *buf, size_t n, const wxStopWatch& timer, unsigned int timeout_ms, 
 bool
 mcxcomm_recv(msg *msg, unsigned int timeout_ms, bool *err)
 {
-    wxStopWatch timer;
+    ssize_t ret = s_dev->Read(&msg->stx, 1);
 
-    if (!_read_n(&msg->stx, 1, timer, timeout_ms, err)) {
-if (*err) wxLogDebug("%s fail reading 1 byte",__FUNCTION__);
+    if (ret == 0) {
+        *err = false;
         return false;
     }
-//wxLogDebug("recv 0x%x",msg->stx);
 
-    if (msg->stx == STX) {
-        if (!_read_n(&msg->cmdrsp, sizeof(*msg) - 1, timer, timeout_ms, err))
-            return false;
+    if (ret == -1) {
+        *err = true;
+        wxLogDebug("%s fail reading 1 byte",__FUNCTION__);
+        return false;
     }
 
-    return true;
+    if (msg->stx != STX) {
+        *err = false;
+        return true;
+    }
+
+    return _read_n(&msg->cmdrsp, sizeof(*msg) - 1, err);
 }

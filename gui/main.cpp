@@ -127,6 +127,7 @@ static bool s_reader_connected;
 static int s_fsm_next_smry;
 static bool s_fsm_got_ack;
 static bool s_fsm_got_response;
+static int s_fsm_exp[3];
 static msg s_fsm_response;
 static IntState s_int_state = INT_STOPPED;
 static bool s_int_stop_clicked;
@@ -1478,7 +1479,6 @@ _cam_discover(bool *done)
     // Start camera discovery by sending ENQ
 
     s_fsm_got_ack = false;
-    s_fsm_got_response = false;
     mcxcomm_send_enq();
 
     s_fsm_timeout = false;
@@ -1542,16 +1542,31 @@ static u8 DISCO[] = {
 #undef X
 
 static void
+_exp_resp(int item, int subitem = -1, int subsubitem = -1)
+{
+    s_fsm_exp[0] = item;
+    s_fsm_exp[1] = subitem;
+    s_fsm_exp[2] = subsubitem;
+}
+
+static void
 _send_smry_cmd()
 {
     msg req;
 
     // 0..6  summary command 0x45
     // 7..10 mask areas
-    if (s_fsm_next_smry < 7)
-        mcxcmd_get(&req, 0x45, s_fsm_next_smry);
-    else
-        mcxcmd_get(&req, 0x1d, 0x10 + s_fsm_next_smry - 7);
+    u8 item, subitem;
+
+    if (s_fsm_next_smry < 7) {
+        item = 0x45;
+        subitem = s_fsm_next_smry;
+    }
+    else {
+        item = 0x1d;
+        subitem = 0x10 + s_fsm_next_smry - 7;
+    }
+    mcxcmd_get(&req, item, subitem);
 
     char buf[32];
     snprintf(buf, sizeof(buf), "Reading from camera (%u/11)", s_fsm_next_smry + 1);
@@ -1559,6 +1574,7 @@ _send_smry_cmd()
 
     s_fsm_got_ack = false;
     s_fsm_got_response = false;
+    _exp_resp(item, subitem);
     mcxcomm_send_msg(req);
 
     s_fsm_timeout = false;
@@ -1710,6 +1726,7 @@ _send_cmd()
 
     s_fsm_got_ack = false;
     s_fsm_got_response = false;
+    _exp_resp(s_active_cmd.ctrl); // todo: subitem and subsubitem
     mcxcomm_send_msg(s_active_cmd);
 
     s_fsm_timeout = false;
@@ -3321,6 +3338,33 @@ MainFrameD::OnTimer(wxTimerEvent& event)
     }
 }
 
+static bool
+_valid_response(const msg& msg)
+{
+    int ret = mcxcmd_validate(&msg);
+    if (ret != 0) {
+        wxLogDebug("mcxcmd_validate returned %d!", ret);
+        return false;
+    }
+
+    if (s_fsm_exp[0] >= 0 && msg.ctrl != s_fsm_exp[0]) {
+        wxLogDebug("expecting item 0x%x, got 0x%x", s_fsm_exp[0], msg.ctrl);
+        return false;
+    }
+
+    if (s_fsm_exp[1] >= 0 && msg.data[0] != s_fsm_exp[1]) {
+        wxLogDebug("expecting item 0x%x, got 0x%x", s_fsm_exp[1], msg.data[0]);
+        return false;
+    }
+
+    if (s_fsm_exp[2] >= 0 && msg.data[1] != s_fsm_exp[2]) {
+        wxLogDebug("expecting item 0x%x, got 0x%x", s_fsm_exp[2], msg.data[1]);
+        return false;
+    }
+
+    return true;
+}
+
 void
 MainFrameD::OnMcxMsg(McxMsgEvent& event)
 {
@@ -3342,9 +3386,16 @@ MainFrameD::OnMcxMsg(McxMsgEvent& event)
             break;
         case STX:
             wxLogDebug("recvd: [%s]", _readable(event.evt_msg));
-            s_fsm_response = event.evt_msg;
-            s_fsm_got_response = true;
-// todo: validate cksum
+            bool valid;
+            valid = _valid_response(event.evt_msg);
+            if (valid) {
+                s_fsm_response = event.evt_msg;
+                s_fsm_got_response = true;
+            }
+            else {
+                mcxcomm_send_ack(); // ? helpful
+                wxLogDebug("discarded response");
+            }
             break;
         case NAK:
             wxLogDebug("recvd NAK");
