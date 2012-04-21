@@ -532,8 +532,8 @@
                             <property name="label">About</property>
                             <property name="name">m_info</property>
                             <property name="permission">protected</property>
-                            <property name="statusbar">About Mallincam control</property>
-                            <property name="tooltip">About Mallincam control</property>
+                            <property name="statusbar">About MallinCam control</property>
+                            <property name="tooltip">About MallinCam control</property>
                             <event name="OnAuiToolBarBeginDrag"></event>
                             <event name="OnAuiToolBarMiddleClick"></event>
                             <event name="OnAuiToolBarOverflowClick"></event>

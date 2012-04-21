@@ -61,4 +61,5 @@ libgcc_s_dw2-1.dll: /mingw/bin/libgcc_s_dw2-1.dll
 
 zip: mcx$(EXEEXT) dso.mcx lunar.mcx planetary.mcx solar.mcx
 	strip mcx$(EXEEXT)
+	rm -f mcx-$(VERSION).zip
 	$(ZIP) mcx-$(VERSION).zip $^

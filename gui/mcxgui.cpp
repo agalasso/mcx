@@ -76,7 +76,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	m_toolBar->AddSeparator(); 
 	
-	m_toolBar->AddTool( ID_ABOUT, wxT("About"), wxBitmap( info_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("About Mallincam control"), wxT("About Mallincam control"), NULL ); 
+	m_toolBar->AddTool( ID_ABOUT, wxT("About"), wxBitmap( info_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("About MallinCam control"), wxT("About MallinCam control"), NULL ); 
 	
 	m_toolBar->Realize(); 
 	
