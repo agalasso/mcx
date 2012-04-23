@@ -8,6 +8,7 @@ ifeq ($(UNAME_O), Msys)
   DBGVIEW := Dbgview
   EXEEXT := .exe
   ZIP := /c/cygwin/bin/zip.exe
+  WXLDFLAGS = -static
 else ifeq ($(UNAME_O), GNU/Linux)
   OS := linux
   WX := /opt/wxWidgets-2.9.3
@@ -22,7 +23,7 @@ CXXFLAGS = $(shell $(WXCONFIG) --cxxflags) $(EXTRA_CXXFLAGS) -g -DVERSION=\"$(VE
 WXLIBS := $(shell $(WXCONFIG) --libs --debug=yes)
 TARGET := $(OS)
 WXCXX = $(shell $(WXCONFIG) --cxx)
-WXLD = $(shell $(WXCONFIG) --ld --static=yes)
+WXLD = $(shell $(WXCONFIG) --ld)
 
 all: mcx$(EXEEXT)
 
@@ -51,7 +52,7 @@ mcx.res: mcx.rc mcx.exe.manifest
 	windres --input $< --output $@ --output-format=coff
 
 mcx$(EXEEXT): main.o mcxgui.o crc16.o mcxcomm.o mcxcomm_$(TARGET).o $(MCX_RES)
-	$(WXLD) $@ -static $^ $(WXLIBS)
+	$(WXLD) $@ $(WXLDFLAGS) $^ $(WXLIBS)
 
 run: mcx$(EXEEXT)
 	LD_LIBRARY_PATH=$(WX)/lib ./mcx$(EXEEXT)

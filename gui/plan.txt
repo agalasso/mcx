@@ -1,13 +1,10 @@
 TODO
   bugs:
      stop didn't stop when re-sending
-  bug: slide to 128x, immediately start integration
   logging
-  on exit try to send sync=int
-  remember last N int values
+  x-y control for APC and R/B
   installer - win
   installer - linux
-  resolve COMMAND_DELAY_MS vs INT_CAPTURE_DELAY_MS - test it
   blc
   save settings to camera?
      0x1e   "Exit item, SAVE setting"    - save to camera
@@ -15,6 +12,10 @@ TODO
      0x20,0 "Exit item, PRESET setting"  - revert to factory defaults
 
 done:
+  resolve COMMAND_DELAY_MS vs INT_CAPTURE_DELAY_MS - test it
+  on exit try to send sync=int
+  remember last N int values
+  bug: slide to 128x, immediately start integration
   integration gets stuck looping receiving garbage
   awc set
   resend mcx message if not acked?

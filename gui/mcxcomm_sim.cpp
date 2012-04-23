@@ -16,12 +16,6 @@ static int s_wrpos = 0;
 static int s_empty = 1;
 static wxMutex s_buflock;
 
-#ifdef __WXMSW__
-static unsigned int s_randbuf;
-#else
-static struct random_data s_randbuf;
-#endif
-
 static void
 _put(const msg *msg)
 {
@@ -47,11 +41,6 @@ _get(msg *msg)
 bool
 mcxcomm_init()
 {
-#ifdef __WXMSW__
-    s_randbuf = time(0);
-#else
-    srandom_r(time(0), &s_randbuf);
-#endif
     return true;
 }
 
@@ -93,12 +82,7 @@ mcxcomm_send_msg(const msg& cmd)
     // simulator sends ack, then response
     msg rsp;
 
-    int32_t val;
-#ifdef __WXMSW__
-    val = rand();
-#else
-    random_r(&s_randbuf, &val);
-#endif
+    int32_t val = rand();
 
     if (s_cnt > 0) {
         if (--s_cnt == 0) {
