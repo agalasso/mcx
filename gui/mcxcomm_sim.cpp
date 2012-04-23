@@ -5,6 +5,8 @@
 # include "wx/wx.h"
 #endif
 
+#include "crc16.h"
+
 #include <stdlib.h>
 
 enum { NRESP = 10 };
@@ -111,12 +113,18 @@ mcxcomm_send_msg(const msg& cmd)
     if (val < RAND_MAX / 100 * (100 - s_drop_rsp_pct)) {
         rsp = cmd;
 
+        rsp.cmdrsp = 0xA0; // RSP_OK
+
 //        if (cmd.ctrl == 0x45 && cmd.data[0] == 0x1)
 //            rsp.data[4] = 12; // senseUp 128x
         if (cmd.ctrl == 0x45 && cmd.data[0] == 0x1)
             rsp.data[7] = 4; // agcManLevel
         if (cmd.ctrl == 0x45 && cmd.data[0] == 0x3)
             rsp.data[4] = 2; // agcMan
+
+  unsigned short crc = crc16(&rsp.cmdrsp, (unsigned long) &rsp.crc_hi - (unsigned long) &rsp.cmdrsp);
+  rsp.crc_hi = (u8) (crc >> 8);
+  rsp.crc_lo = (u8) (crc & 0xff);
 
         _put(&rsp);
     }

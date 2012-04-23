@@ -76,7 +76,6 @@ class MainFrame : public wxFrame
 		wxStaticText* m_agcManLabel;
 		wxStaticText* m_agcManVal;
 		wxStaticText* m_agcAutoLabel;
-		wxSlider* m_agcAuto;
 		wxStaticText* m_agcAutoVal;
 		wxStaticText* m_apcHLabel;
 		wxSlider* m_apcH;
@@ -173,6 +172,7 @@ class MainFrame : public wxFrame
 		wxComboBox* m_int;
 		wxButton* m_intBtn;
 		wxSlider* m_agcMan;
+		wxSlider* m_agcAuto;
 		wxSlider* m_tecLevel;
 		wxChoice* m_port;
 		wxStatusBar* m_statusBar;

@@ -102,7 +102,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	senseUpSizer->Add( m_senseUp, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_senseUpVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxSize( 25,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
+	m_senseUpVal = new wxStaticText( this, wxID_ANY, wxT("Off"), wxDefaultPosition, wxSize( 35,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_senseUpVal->Wrap( -1 );
 	senseUpSizer->Add( m_senseUpVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
@@ -433,7 +433,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	
 	gammaSizer->Add( m_gamma, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	
-	m_gammaVal = new wxStaticText( this, wxID_ANY, wxT("0.45"), wxDefaultPosition, wxSize( 40,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
+	m_gammaVal = new wxStaticText( this, wxID_ANY, wxT("0.45"), wxDefaultPosition, wxSize( 35,-1 ), wxST_NO_AUTORESIZE|wxSIMPLE_BORDER );
 	m_gammaVal->Wrap( -1 );
 	gammaSizer->Add( m_gammaVal, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 	

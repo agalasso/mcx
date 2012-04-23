@@ -11,6 +11,8 @@
 #include "mcx.xpm"
 
 #include <map>
+#include <sstream>
+#include <set>
 
 #define lengthof(a) (sizeof(a)/sizeof((a)[0]))
 
@@ -278,6 +280,9 @@ struct Camera
     u8 zoomLevel; // 0..8
 };
 
+// cam0 and cam1 provide edge detection for ui settings
+//   ui changes update cam1
+//   then queue (cam1 - cam0) commands to camera, and set cam0 = cam1
 static Camera s_cam0, s_cam1;
 
 enum {
@@ -1274,9 +1279,19 @@ _kill_reader(const char *whence)
     }
 }
 
+static void
+_stop_integration()
+{
+    s_int_stop_clicked = true;
+    _do_camera_fsm();
+}
+
 bool
 MainFrameD::Destroy()
 {
+    if (s_int_state != INT_STOPPED)
+        _stop_integration();
+
     _kill_reader(__FUNCTION__);
     return inherited::Destroy();
 }
@@ -1826,56 +1841,164 @@ _cam_uptodate(bool *done)
     *done = true;
 }
 
+static unsigned int
+_parse_int_str(const wxString& s)
+{
+    static bool s_inited;
+    static wxRegEx s_re1;
+    static wxRegEx s_re2;
+
+    if (!s_inited) {
+
+        // 33
+        // 33s
+        // 3m
+        // 2m30
+        // 2m30s
+        // :30
+        // 2:30
+
+        s_re1.Compile("^(([0-9]+)m)?(([0-9]+)s?)?$");
+        s_re2.Compile("^(([0-9]+)?:)?([0-9]+)$");
+        s_inited = true;
+    }
+
+    unsigned int i = 0;
+
+    if (s_re1.Matches(s)) {
+        size_t start, len;
+        s_re1.GetMatch(&start, &len, 2);
+        wxString mn = s.Mid(start, len);
+        s_re1.GetMatch(&start, &len, 4);
+        wxString sc = s.Mid(start, len);
+        i = ::atoi(mn.c_str()) * 60 + ::atoi(sc);
+    }
+    else if (s_re2.Matches(s)) {
+        size_t start, len;
+        s_re2.GetMatch(&start, &len, 2);
+        wxString mn = s.Mid(start, len);
+        s_re2.GetMatch(&start, &len, 3);
+        wxString sc = s.Mid(start, len);
+        i = ::atoi(mn.c_str()) * 60 + ::atoi(sc);
+    }
+
+    return i;
+}
+
+enum { KEEP_INT_VALS = 10 };
+struct IntVal {
+    wxString str;
+    unsigned int val;
+    bool operator<(const IntVal& rhs) const { return val < rhs.val; }
+};
+// mru order [0] = mru
+static IntVal s_int_vals[KEEP_INT_VALS];
+
+static void
+_init_int_vals(const wxString& str)
+{
+    unsigned int idx;
+    for (idx = 0; idx < KEEP_INT_VALS; idx++) {
+        s_int_vals[idx].str.Clear();
+        s_int_vals[idx].val = 0;
+    }
+    const char *p = str.c_str();
+    idx = 0;
+    while (*p) {
+        const char *e = p;
+        while (*e && *e != ',')
+            ++e;
+        wxString s = wxString(p, e - p);
+        unsigned int i = _parse_int_str(s);
+        if (i >= 3) {
+            s_int_vals[idx].str = s;
+            s_int_vals[idx].val = i;
+            if (++idx == KEEP_INT_VALS)
+                break;
+        }
+        if (*e == 0)
+            break;
+        p = e + 1;
+    }
+}
+
+static wxString
+_int_vals_str()
+{
+    std::ostringstream os;
+    bool first = true;
+    for (unsigned int i = 0; i < KEEP_INT_VALS; i++) {
+        if (s_int_vals[i].val) {
+            if (first)
+                first = false;
+            else
+                os << ',';
+            os << s_int_vals[i].str;
+        }
+    }
+    return os.str();
+}
+
+inline static int
+_find_int_val(unsigned int val)
+{
+    for (unsigned int j = 0; j < KEEP_INT_VALS; j++)
+        if (s_int_vals[j].val == val)
+            return j;
+    return -1;
+}
+
+static void
+_update_int_hist(const wxString& str, unsigned int val)
+{
+    int j = _find_int_val(val);
+    if (j == 0 && s_int_vals[j].str == str)
+        return; // already at top and same string value
+    if (j == -1)
+        j = KEEP_INT_VALS - 1;
+    for (unsigned int d = j; d >= 1; --d)
+        s_int_vals[d] = s_int_vals[d - 1];
+    s_int_vals[0].str = str;
+    s_int_vals[0].val = val;
+
+    // build sorted list for control
+    std::set<IntVal> s;
+    for (unsigned int i = 0; i < KEEP_INT_VALS; i++) {
+        if (s_int_vals[i].val)
+            s.insert(s_int_vals[i]);
+    }
+
+    wxArrayString as;
+    std::set<IntVal>::const_iterator end = s.end();
+    unsigned int i = 0;
+    int selection = wxNOT_FOUND;
+    for (std::set<IntVal>::const_iterator it = s.begin(); it != end; ++it, ++i) {
+        as.Add(it->str);
+        if (it->val == val)
+            selection = i;
+    }
+
+    MainFrameD *win = _win();
+    win->m_int->Clear();
+    win->m_int->Append(as);
+    win->m_int->SetSelection(selection);
+}
+
 static void
 __update_int_time()
 {
   MainFrameD *win = _win();
   wxString s = win->m_int->GetValue();
+  unsigned int i = _parse_int_str(s);
 
-  static bool s_inited;
-  static wxRegEx s_re1;
-  static wxRegEx s_re2;
-
-  if (!s_inited) {
-
-      // 33
-      // 33s
-      // 3m
-      // 2m30
-      // 2m30s
-      // :30
-      // 2:30
-
-      s_re1.Compile("^(([0-9]+)m)?(([0-9]+)s?)?$");
-      s_re2.Compile("^(([0-9]+)?:)?([0-9]+)$");
-      s_inited = true;
+  if (i < 3) {
+      i = 3;
+     win->m_int->SetValue("3");
   }
 
-  long l = 0;
+  _update_int_hist(s, i);
 
-  if (s_re1.Matches(s)) {
-      size_t start, len;
-      s_re1.GetMatch(&start, &len, 2);
-      wxString mn = s.Mid(start, len);
-      s_re1.GetMatch(&start, &len, 4);
-      wxString sc = s.Mid(start, len);
-      l = ::atol(mn.c_str()) * 60 + ::atol(sc);
-  }
-  else if (s_re2.Matches(s)) {
-      size_t start, len;
-      s_re2.GetMatch(&start, &len, 2);
-      wxString mn = s.Mid(start, len);
-      s_re2.GetMatch(&start, &len, 3);
-      wxString sc = s.Mid(start, len);
-      l = ::atol(mn.c_str()) * 60 + ::atol(sc);
-  }
-
-  if (l < 3) {
-      l = 3;
-      win->m_int->SetValue("3");
-  }
-
-  s_int_time = l * 1000;
+  s_int_time = i * 1000;
 }
 
 static void
@@ -2056,20 +2179,35 @@ _senseup_val(int scroll_val)
     return val[scroll_val];
 }
 
+static void
+_set_cam_agc(Camera *cam)
+{
+    MainFrameD *const win = _win();
+    int const agcm = win->m_agcMan->GetValue();
+    int const agca = win->m_agcAuto->GetValue();
+
+    int const val[] = { -1, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+
+    if (agcm == 0 && agca == 0) {
+        cam->agc = 0;
+    }
+    else if (agcm > 0) {
+        cam->agc = 2; // manual
+        cam->agcManual = val[agcm];
+    }
+    else {
+        cam->agc = 1; // auto
+        cam->agcLevel = val[agca];
+    }
+}
+
 static bool
 _send_agc()
 {
     MainFrameD *const win = _win();
 
-    int const p = win->m_agcMan->GetValue();
-    int const val[] = { -1, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-    if (p == 0) {
-        s_cam1.agc = 0; // off
-    }
-    else {
-        s_cam1.agc = 2; // manual
-        s_cam1.agcManual = val[p];
-    }
+    _set_cam_agc(&s_cam1);
+
 wxLogDebug("SENDAGC agc %u=>%u %u=>%u %u=>%u",s_cam0.agc,s_cam1.agc,s_cam0.agcManual,s_cam1.agcManual,s_cam0.senseUp,s_cam1.senseUp);
     bool changed =
         s_cam1.agc &&
@@ -2355,31 +2493,31 @@ dnotify(int when)
 void
 MainFrameD::doEnablesForSenseUp()
 {
-  int const p = m_senseUp->GetValue();
+    int const p = _senseup_val(m_senseUp->GetValue());
 
-  if (p == 12) { // 128x
-    // enable integration controls
-    m_int->Enable(true);
-    m_intBtn->Enable(true);
-    m_intBtn->SetLabel("Start");
-  }
-  else {
-    // stop integration and disable integration controls
-    m_int->Enable(false);
-    m_intBtn->Enable(false);
-    m_intBtn->SetLabel("Start");
-  }
+    if (p == SENSEUP_128X && s_cam1.senseUp == SENSEUP_128X) {
+        // enable integration controls
+        m_int->Enable(true);
+        m_intBtn->Enable(true);
+        m_intBtn->SetLabel("Start");
+    }
+    else {
+        // disable integration controls
+        m_int->Enable(false);
+        m_intBtn->Enable(false);
+        m_intBtn->SetLabel("Start");
+    }
 }
 
 void
 MainFrameD::senseUpUpdated()
 {
-  const char *sval[] = { "Off", "2x", "4x", "6x", "8x", "12x", "16x", "24x", "32x", "48x", "64x", "96x", "128x" };
-  int const p = m_senseUp->GetValue();
-  wxASSERT(p >= 0 && p < lengthof(sval));
-  m_senseUpVal->SetLabel(sval[p]);
+    const char *sval[] = { "Off", "2x", "4x", "6x", "8x", "12x", "16x", "24x", "32x", "48x", "64x", "96x", "128x" };
+    int const p = m_senseUp->GetValue();
+    wxASSERT(p >= 0 && p < lengthof(sval));
+    m_senseUpVal->SetLabel(sval[p]);
 
-  doEnablesForSenseUp();
+    doEnablesForSenseUp();
 }
 
 void
@@ -2508,13 +2646,6 @@ _start_integration()
     _do_camera_fsm();
 }
 
-static void
-_stop_integration()
-{
-    s_int_stop_clicked = true;
-    _do_camera_fsm();
-}
-
 void
 MainFrameD::intBtnClicked(wxCommandEvent& event)
 {
@@ -2539,6 +2670,7 @@ MainFrameD::agcManScroll(wxScrollEvent& event)
     agcManUpdated();
 
     int const p = event.GetPosition();
+
     if (p > 0) {
         // set AGC Auto off
         m_agcAuto->SetValue(0);
@@ -2553,35 +2685,29 @@ MainFrameD::agcManScroll(wxScrollEvent& event)
 void
 MainFrameD::agcAutoUpdated()
 {
-  const char *sval[] = { "Off", "0", "1", "2", "3", "4", "5", "6", "7", "8", };
-  int const p = m_agcAuto->GetValue();
-  wxASSERT(p >= 0 && p < lengthof(sval));
-  m_agcAutoVal->SetLabel(sval[p]);
+    const char *sval[] = { "Off", "0", "1", "2", "3", "4", "5", "6", "7", "8", };
+    int const p = m_agcAuto->GetValue();
+    wxASSERT(p >= 0 && p < lengthof(sval));
+    m_agcAutoVal->SetLabel(sval[p]);
 }
 
 void
 MainFrameD::agcAutoScroll(wxScrollEvent& event)
 {
-  agcAutoUpdated();
+    agcAutoUpdated();
 
-  int const p = event.GetPosition();
+    int const p = event.GetPosition();
 
-  if (p > 0) {
-    // set AGC Manual off
-    m_agcMan->SetValue(0);
-    wxScrollEvent ev(wxEVT_SCROLL_TOP);
-    m_agcMan->GetEventHandler()->ProcessEvent(ev);
-  }
+    if (p > 0) {
+        // set AGC Manual off
+        m_agcMan->SetValue(0);
+        wxScrollEvent ev(wxEVT_SCROLL_TOP);
+        m_agcMan->GetEventHandler()->ProcessEvent(ev);
+    }
 
-  int const val[] = { -1, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-  if (p == 0) {
-    s_cam1.agc = 0; // off
-  }
-  else {
-    s_cam1.agc = 1; // on (auto)
-    s_cam1.agcLevel = val[p];
-  }
-  dnotify(UPD_DEFER);
+    _set_cam_agc(&s_cam1);
+
+    dnotify(UPD_DEFER);
 }
 
 void
@@ -3546,12 +3672,18 @@ McxApp::OnInit()
     MainFrameD *frame = new MainFrameD(0);
     frame->SetIcon(wxIcon(mcx_xpm));
 
+    // load comm port from registry
     wxString port;
     wxConfig::Get()->Read("CommPort", &port, "COM1");
     frame->m_port->SetStringSelection(port);
 
     unsigned int port_nr = _port_nr(port);
     _cfg_set_port(port_nr);
+
+    // load int values from registry
+    wxString vals;
+    wxConfig::Get()->Read("IntVals", &vals, "7,14,28,56");
+    _init_int_vals(vals);
 
     frame->Show(true);
     SetTopWindow(frame);
@@ -3566,6 +3698,9 @@ int
 McxApp::OnExit()
 {
     _kill_reader(__FUNCTION__);
+
+    // save int values
+    wxConfig::Get()->Write("IntVals", _int_vals_str());
 
     return 0;
 //  return inherited::OnExit(); // todo

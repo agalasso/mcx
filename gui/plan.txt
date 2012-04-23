@@ -3,6 +3,8 @@ TODO
      stop didn't stop when re-sending
   bug: slide to 128x, immediately start integration
   logging
+  on exit try to send sync=int
+  remember last N int values
   installer - win
   installer - linux
   resolve COMMAND_DELAY_MS vs INT_CAPTURE_DELAY_MS - test it
@@ -275,3 +277,15 @@ load from file:
 CCD Mode:
    AGC Off
    APC 0,0
+
+==========
+data:
+   int seconds
+   display: str
+init:
+   read value (str) mru order and fill array
+set int-value
+   search mru list for match, remove it if found
+   put value at top of list
+   populate control items
+   save mru values to reg

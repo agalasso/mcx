@@ -828,7 +828,7 @@
                                         <property name="pos"></property>
                                         <property name="resize">Resizable</property>
                                         <property name="show">1</property>
-                                        <property name="size">25,-1</property>
+                                        <property name="size">35,-1</property>
                                         <property name="style">wxST_NO_AUTORESIZE</property>
                                         <property name="subclass"></property>
                                         <property name="toolbar_pane">0</property>
@@ -1667,14 +1667,14 @@
                                 </object>
                             </object>
                         </object>
-                        <object class="gbsizeritem" expanded="0">
+                        <object class="gbsizeritem" expanded="1">
                             <property name="border">5</property>
                             <property name="colspan">1</property>
                             <property name="column">1</property>
                             <property name="flag">wxEXPAND</property>
                             <property name="row">1</property>
                             <property name="rowspan">1</property>
-                            <object class="wxStaticBoxSizer" expanded="0">
+                            <object class="wxStaticBoxSizer" expanded="1">
                                 <property name="id">wxID_ANY</property>
                                 <property name="label">AGC</property>
                                 <property name="minimum_size"></property>
@@ -1682,11 +1682,11 @@
                                 <property name="orient">wxVERTICAL</property>
                                 <property name="permission">none</property>
                                 <event name="OnUpdateUI"></event>
-                                <object class="sizeritem" expanded="0">
+                                <object class="sizeritem" expanded="1">
                                     <property name="border">5</property>
                                     <property name="flag">wxEXPAND</property>
                                     <property name="proportion">1</property>
-                                    <object class="wxBoxSizer" expanded="0">
+                                    <object class="wxBoxSizer" expanded="1">
                                         <property name="minimum_size"></property>
                                         <property name="name">bSizer101</property>
                                         <property name="orient">wxHORIZONTAL</property>
@@ -1975,11 +1975,11 @@
                                         </object>
                                     </object>
                                 </object>
-                                <object class="sizeritem" expanded="0">
+                                <object class="sizeritem" expanded="1">
                                     <property name="border">5</property>
                                     <property name="flag">wxEXPAND</property>
                                     <property name="proportion">1</property>
-                                    <object class="wxBoxSizer" expanded="0">
+                                    <object class="wxBoxSizer" expanded="1">
                                         <property name="minimum_size"></property>
                                         <property name="name">bSizer11</property>
                                         <property name="orient">wxHORIZONTAL</property>
@@ -2116,7 +2116,7 @@
                                                 <property name="pane_border">1</property>
                                                 <property name="pane_position"></property>
                                                 <property name="pane_size"></property>
-                                                <property name="permission">protected</property>
+                                                <property name="permission">public</property>
                                                 <property name="pin_button">1</property>
                                                 <property name="pos"></property>
                                                 <property name="resize">Resizable</property>
@@ -5041,7 +5041,7 @@
                                                 <property name="pos"></property>
                                                 <property name="resize">Resizable</property>
                                                 <property name="show">1</property>
-                                                <property name="size">40,-1</property>
+                                                <property name="size">35,-1</property>
                                                 <property name="style">wxST_NO_AUTORESIZE</property>
                                                 <property name="subclass"></property>
                                                 <property name="toolbar_pane">0</property>
