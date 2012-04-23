@@ -1454,9 +1454,9 @@ _init_fixed_vals(Camera *cam)
 }
 
 static void
-_init_ctrl_vals()
+_init_ctrl_vals(Camera *cam)
 {
-    _win()->InitControls(&s_cam1);
+    _win()->InitControls(cam);
 }
 
 static void
@@ -1658,7 +1658,7 @@ _cam_reading2(bool *done)
 static void
 _init_cmds_done()
 {
-    _init_ctrl_vals();
+    _init_ctrl_vals(&s_cam1);
     _enable_controls(EN_ENABLE_ALL);
     status("");
 
@@ -2339,8 +2339,8 @@ static void
 _agc_park_init(bool *done)
 {
     // tec noise detect to full
-    {
-	MainFrameD *const win = _win();
+    MainFrameD *const win = _win();
+    if (win->m_tecLevel->GetValue() != (8 + 1)) {
         win->m_tecLevel->SetValue(8 + 1);
         wxScrollEvent ev(wxEVT_SCROLL_TOP);
         win->m_tecLevel->GetEventHandler()->ProcessEvent(ev);
@@ -2530,11 +2530,15 @@ MainFrameD::senseUpScroll(wxScrollEvent&)
     if (val > 0) {
         wxScrollEvent ev(wxEVT_SCROLL_TOP);
         // set ALC off
-        m_alc->SetValue(0);
-        m_alc->GetEventHandler()->ProcessEvent(ev);
+        if (m_alc->GetValue() != 0) {
+            m_alc->SetValue(0);
+            m_alc->GetEventHandler()->ProcessEvent(ev);
+        }
         // set ELC off
-        m_elc->SetValue(0);
-        m_elc->GetEventHandler()->ProcessEvent(ev);
+        if (m_elc->GetValue() != 0) {
+            m_elc->SetValue(0);
+            m_elc->GetEventHandler()->ProcessEvent(ev);
+        }
     }
 
     if (val < SENSEUP_128X) {
@@ -2566,13 +2570,17 @@ MainFrameD::alcScroll(wxScrollEvent& event)
     int const p = event.GetPosition();
 
     if (p > 0) {
-        // force sense-up off
-        m_senseUp->SetValue(0);
         wxScrollEvent ev(wxEVT_SCROLL_TOP);
-        m_senseUp->GetEventHandler()->ProcessEvent(ev);
-        // set ELC off
-        m_elc->SetValue(0);
-        m_elc->GetEventHandler()->ProcessEvent(ev);
+        if (m_senseUp->GetValue() != 0) {
+            // force sense-up off
+            m_senseUp->SetValue(0);
+            m_senseUp->GetEventHandler()->ProcessEvent(ev);
+        }
+        if (m_elc->GetValue() != 0) {
+            // set ELC off
+            m_elc->SetValue(0);
+            m_elc->GetEventHandler()->ProcessEvent(ev);
+        }
     }
 
     int const val[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
@@ -2618,13 +2626,17 @@ MainFrameD::elcScroll(wxScrollEvent& event)
     int const p = event.GetPosition();
 
     if (p > 0) {
-        // force sense-up off
-        m_senseUp->SetValue(0);
         wxScrollEvent ev(wxEVT_SCROLL_TOP);
-        m_senseUp->GetEventHandler()->ProcessEvent(ev);
+        // force sense-up off
+        if (m_senseUp->GetValue() != 0) {
+            m_senseUp->SetValue(0);
+            m_senseUp->GetEventHandler()->ProcessEvent(ev);
+        }
         // set ALC off
-        m_alc->SetValue(0);
-        m_alc->GetEventHandler()->ProcessEvent(ev);
+        if (m_alc->GetValue() != 0) {
+            m_alc->SetValue(0);
+            m_alc->GetEventHandler()->ProcessEvent(ev);
+        }
     }
 
     int const val[] = { -1, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
@@ -2672,10 +2684,12 @@ MainFrameD::agcManScroll(wxScrollEvent& event)
     int const p = event.GetPosition();
 
     if (p > 0) {
-        // set AGC Auto off
-        m_agcAuto->SetValue(0);
-        wxScrollEvent ev(wxEVT_SCROLL_TOP);
-        m_agcAuto->GetEventHandler()->ProcessEvent(ev);
+        if (m_agcAuto->GetValue() > 0) {
+            // set AGC Auto off
+            m_agcAuto->SetValue(0);
+            wxScrollEvent ev(wxEVT_SCROLL_TOP);
+            m_agcAuto->GetEventHandler()->ProcessEvent(ev);
+        }
     }
 
     s_agc_wait_state = AGC_WAIT_INIT;
@@ -2699,12 +2713,15 @@ MainFrameD::agcAutoScroll(wxScrollEvent& event)
     int const p = event.GetPosition();
 
     if (p > 0) {
-        // set AGC Manual off
-        m_agcMan->SetValue(0);
-        wxScrollEvent ev(wxEVT_SCROLL_TOP);
-        m_agcMan->GetEventHandler()->ProcessEvent(ev);
+        if (m_agcMan->GetValue() != 0) {
+            // set AGC Manual off
+            m_agcMan->SetValue(0);
+            wxScrollEvent ev(wxEVT_SCROLL_TOP);
+            m_agcMan->GetEventHandler()->ProcessEvent(ev);
+        }
     }
 
+wxLogDebug("agcautoscroll call setcamagc");
     _set_cam_agc(&s_cam1);
 
     dnotify(UPD_DEFER);
@@ -3220,7 +3237,7 @@ _load_cam(const char *filename)
         _init_fixed_vals(&cam);
 	s_cam1 = cam;
 
-	_init_ctrl_vals();
+	_init_ctrl_vals(&s_cam1);
 
 	// activate AGC FSM
         s_agc_wait_state = AGC_WAIT_INIT_NOWAIT;
@@ -3344,28 +3361,28 @@ void
 MainFrameD::ccClicked(wxCommandEvent& event)
 {
     // set AGC Auto off
-    {
+    if (m_agcAuto->GetValue() != 0) {
 	m_agcAuto->SetValue(0);
 	wxScrollEvent ev(wxEVT_SCROLL_TOP);
 	m_agcAuto->GetEventHandler()->ProcessEvent(ev);
     }
 
     // set AGC Manual off
-    {
+    if (m_agcMan->GetValue() != 0) {
 	m_agcMan->SetValue(0);
 	wxScrollEvent ev(wxEVT_SCROLL_TOP);
 	m_agcMan->GetEventHandler()->ProcessEvent(ev);
     }
 
     // set apc-h off
-    {
+    if (m_apcH->GetValue() != 0) {
 	m_apcH->SetValue(0);
 	wxScrollEvent ev(wxEVT_SCROLL_TOP);
 	m_apcH->GetEventHandler()->ProcessEvent(ev);
     }
 
     // set apc-v off
-    {
+    if (m_apcV->GetValue() != 0) {
 	m_apcV->SetValue(0);
 	wxScrollEvent ev(wxEVT_SCROLL_TOP);
 	m_apcV->GetEventHandler()->ProcessEvent(ev);
