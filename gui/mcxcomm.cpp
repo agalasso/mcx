@@ -3,6 +3,7 @@
 # include "wx/wx.h"
 #endif
 
+#include "mcx.h"
 #include "mcxcomm.h"
 #include "crc16.h"
 
@@ -74,7 +75,7 @@ mcxcmd_validate(const msg *msg)
     int ret = 0;
 
     if (msg->stx != STX) {
-        wxLogDebug("bad stx");
+        WARN("bad stx");
         ret = -1;
     }
 
@@ -82,19 +83,19 @@ mcxcmd_validate(const msg *msg)
         /* msg->cmdrsp != RSP_NE1 && */
         msg->cmdrsp != RSP_NE2)
     {
-        wxLogDebug("bad cmdrsp 0x%x", msg->cmdrsp);
+        WARN("bad cmdrsp 0x%x", msg->cmdrsp);
         ret = -2;
     }
 
     if (msg->etx != ETX) {
-        wxLogDebug("bad etx");
+        WARN("bad etx");
         ret = -4;
     }
 
     unsigned short crc = crc16(&msg->cmdrsp, (unsigned long) &msg->crc_hi - (unsigned long) &msg->cmdrsp);
     unsigned short msgcrc = (msg->crc_hi << 8) | msg->crc_lo;
     if (msgcrc != crc) {
-        wxLogDebug("bad crc");
+        WARN("bad crc");
         ret = -5;
     }
 

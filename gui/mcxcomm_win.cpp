@@ -160,7 +160,7 @@ SerialPort::OpenDevice(const char *devname, const SerialPort_DCS& dcs)
                        NULL);
 
     if (m_fd == INVALID_HANDLE_VALUE) {
-wxLogDebug("%s CreateFile(%s) returned invalid file handle", __FUNCTION__, devname);
+        INFO("%s CreateFile(%s) returned invalid file handle", __FUNCTION__, devname);
         return -1;
     }
 
@@ -297,7 +297,7 @@ SerialPort::Read(void *buf, size_t len)
     BOOL ok = ReadFile(m_fd, buf, len, NULL, &m_ov_rd);
 
     if (!ok && GetLastError() != ERROR_IO_PENDING) {
-        wxLogDebug("%s: ReadFile failed", __FUNCTION__);
+        WARN("%s: ReadFile failed", __FUNCTION__);
         return -1;
     }
 
@@ -305,7 +305,7 @@ SerialPort::Read(void *buf, size_t len)
 
     ok = GetOverlappedResult(m_fd, &m_ov_rd, &nread, TRUE /*wait*/);
     if (!ok) {
-        wxLogDebug("%s: GetOverlappedResult failed", __FUNCTION__);
+        WARN("%s: GetOverlappedResult failed", __FUNCTION__);
         return -1;
     }
 
@@ -318,19 +318,19 @@ SerialPort::Write(const void *buf, size_t len)
     DWORD written;
     BOOL ok = GetOverlappedResult(m_fd, &m_ov_wr, &written, FALSE /*no wait*/);
     if (!ok && GetLastError() != ERROR_IO_INCOMPLETE) {
-        wxLogDebug("%s: GetOverlappedResult failed", __FUNCTION__);
+        WARN("%s: GetOverlappedResult failed", __FUNCTION__);
         return false;
     }
 
     if (!ok) {
         // prior write not finished, drop this one
-        wxLogDebug("%s: prior write not complete, dropping write", __FUNCTION__);
+        WARN("%s: prior write not complete, dropping write", __FUNCTION__);
         return false;
     }
 
     ok = WriteFile(m_fd, buf, len, NULL, &m_ov_wr);
     if (!ok && GetLastError() != ERROR_IO_PENDING) {
-        wxLogDebug("%s: WriteFile failed", __FUNCTION__);
+        WARN("%s: WriteFile failed", __FUNCTION__);
         return false;
     }
 
@@ -343,7 +343,7 @@ static SerialPort *s_dev;
 bool
 mcxcomm_init()
 {
-wxLogDebug("%s",__FUNCTION__);
+    VERBOSE("%s",__FUNCTION__);
     s_dev = new SerialPort();
     return true;
 }
@@ -362,25 +362,25 @@ _get_filename(char *buf, size_t len, const char *device)
 bool
 mcxcomm_connect(const char *device)
 {
-wxLogDebug("%s %p %s",__FUNCTION__,s_dev,device);
+    VERBOSE("%s %p %s",__FUNCTION__,s_dev,device);
     char filename[32];
     _get_filename(filename, sizeof(filename), device);
     int ret = s_dev->Open(filename, 9600, "8N1", SerialPort::NoFlowControl);
-    wxLogDebug("%s ret=%d",__FUNCTION__,ret);
+    VERBOSE("%s ret=%d",__FUNCTION__,ret);
     return ret == 0;
 }
 
 void
 mcxcomm_disconnect()
 {
-wxLogDebug("%s",__FUNCTION__);
+    VERBOSE("%s",__FUNCTION__);
     s_dev->Close();
 }
 
 static bool
 _send1(char val)
 {
-    wxLogDebug("%s 0x%x",__FUNCTION__,(unsigned int) val);
+    VERBOSE("%s 0x%x",__FUNCTION__,(unsigned int) val);
 
     return s_dev->Write(&val, sizeof(val));
 }
@@ -400,7 +400,8 @@ mcxcomm_send_ack()
 bool
 mcxcomm_send_msg(const msg& cmd)
 {
-    wxLogDebug("%s %02x %02x %02x %02x %02x %02x",__FUNCTION__,cmd.stx,cmd.cmdrsp,cmd.ctrl,cmd.data[0], cmd.data[1], cmd.data[2]);
+    VERBOSE("%s %02x %02x %02x %02x %02x %02x", __FUNCTION__, cmd.stx,
+            cmd.cmdrsp, cmd.ctrl, cmd.data[0], cmd.data[1], cmd.data[2]);
 
     return s_dev->Write(&cmd, sizeof(cmd));
 }
@@ -413,13 +414,13 @@ _read_n(void *buf, size_t n, bool *err)
     while (rem > 0) {
         ssize_t ret = s_dev->Read(p, rem);
         if (ret == -1) {
-            wxLogDebug("%s read failed",__FUNCTION__);
+            WARN("%s read failed",__FUNCTION__);
             *err = true;
             return false;
         }
         else if (ret == 0) {
             if (rem < n)
-                wxLogDebug("%s read timed out %zu/%zu",__FUNCTION__, n - rem, n);
+                VERBOSE("%s read timed out %zu/%zu",__FUNCTION__, n - rem, n);
             *err = false;
             return false;
         }
@@ -443,7 +444,7 @@ mcxcomm_recv(msg *msg, unsigned int timeout_ms, bool *err)
 
     if (ret == -1) {
         *err = true;
-        wxLogDebug("%s fail reading 1 byte",__FUNCTION__);
+        WARN("%s fail reading 1 byte",__FUNCTION__);
         return false;
     }
 

@@ -16,6 +16,7 @@
 #include <map>
 #include <sstream>
 #include <set>
+#include <sys/time.h>
 
 #define lengthof(a) (sizeof(a)/sizeof((a)[0]))
 
@@ -119,6 +120,9 @@ class ReaderThread;
 typedef std::map<u32, msg> cmdmap_t;
 static cmdmap_t s_cmdmap;
 static msg s_active_cmd;
+
+static wxFileName s_logfile_path;
+
 static CameraState s_camera_state = CAM_INIT;
 static void (*s_fsm_cam_uptodate_cb)();
 static wxTimer *s_deferred_evt_timer;
@@ -1952,18 +1956,8 @@ _find_int_val(unsigned int val)
 }
 
 static void
-_update_int_hist(const wxString& str, unsigned int val)
+_init_int_val_selections(unsigned int val)
 {
-    int j = _find_int_val(val);
-    if (j == 0 && s_int_vals[j].str == str)
-	return; // already at top and same string value
-    if (j == -1)
-	j = KEEP_INT_VALS - 1;
-    for (unsigned int d = j; d >= 1; --d)
-	s_int_vals[d] = s_int_vals[d - 1];
-    s_int_vals[0].str = str;
-    s_int_vals[0].val = val;
-
     // build sorted list for control
     std::set<IntVal> s;
     for (unsigned int i = 0; i < KEEP_INT_VALS; i++) {
@@ -1988,27 +1982,43 @@ _update_int_hist(const wxString& str, unsigned int val)
 }
 
 static void
+_update_int_hist(const wxString& str, unsigned int val)
+{
+    int j = _find_int_val(val);
+    if (j == 0 && s_int_vals[j].str == str)
+	return; // already at top and same string value
+    if (j == -1)
+	j = KEEP_INT_VALS - 1;
+    for (unsigned int d = j; d >= 1; --d)
+	s_int_vals[d] = s_int_vals[d - 1];
+    s_int_vals[0].str = str;
+    s_int_vals[0].val = val;
+
+    _init_int_val_selections(val);
+}
+
+static void
 __update_int_time()
 {
-  MainFrameD *win = _win();
-  wxString s = win->m_int->GetValue();
-  unsigned int i = _parse_int_str(s);
+    MainFrameD *win = _win();
+    wxString s = win->m_int->GetValue();
+    unsigned int i = _parse_int_str(s);
 
-  if (i < 3) {
-      i = 3;
-     win->m_int->SetValue("3");
-  }
+    if (i < 3) {
+        i = 3;
+        win->m_int->SetValue("3");
+    }
 
-  _update_int_hist(s, i);
+    _update_int_hist(s, i);
 
-  s_int_time = i * 1000;
+    s_int_time = i * 1000;
 }
 
 static void
 _update_int_time()
 {
-  __update_int_time();
-  _do_camera_fsm();
+    __update_int_time();
+    _do_camera_fsm();
 }
 
 static void
@@ -3407,18 +3417,27 @@ public:
     AboutDialogD(wxWindow *parent) : AboutDialog(parent) { }
 };
 
+static void
+_shell_open(const wxString& loc)
+{
+#if defined(__WXMSW__)
+    ::ShellExecuteA(NULL, "open", loc.c_str(), NULL, NULL, SW_SHOWNORMAL);
+#elif defined(__WXOSX__)
+    ::wxExecute("/usr/bin/open '" + loc + "'", wxEXEC_ASYNC);
+#else
+    ::wxExecute("xdg-open '" + loc + "'", wxEXEC_ASYNC);
+#endif
+}
+
 void
 AboutDialogD::LinkClicked(wxHtmlLinkEvent& event)
 {
     wxString href = event.GetLinkInfo().GetHref();
 
-#if defined(__WXMSW__)
-    ::ShellExecuteA(NULL, "open", href.c_str(), NULL, NULL, SW_SHOWNORMAL);
-#elif defined(__WXOSX__)
-    ::wxExecute("/usr/bin/open '" + href + "'", wxEXEC_ASYNC);
-#else
-    ::wxExecute("xdg-open '" + href + "'", wxEXEC_ASYNC);
-#endif
+    if (href == "showlog")
+        _shell_open(s_logfile_path.GetPath());
+    else
+        _shell_open(href);
 }
 
 void
@@ -3427,7 +3446,6 @@ MainFrameD::AboutClicked(wxCommandEvent& event)
     AboutDialog *dlg = new AboutDialogD(this);
     dlg->m_html->SetPage(
 "<html>"
-"<br>"
 "<br>"
 "<br>"
 "<center><h1>MallinCam Control</h1></center>"
@@ -3441,6 +3459,10 @@ MainFrameD::AboutClicked(wxCommandEvent& event)
 "<br>"
 "<center>Written by</center>"
 "<center>Andy Galasso &lt;andy.galasso@gmail.com&gt;</center>"
+"<br>"
+"<br>"
+"<hr>"
+"<small><a href=\"showlog\">Log Files</a></small>"
 "</html>");
 
     dlg->ShowModal();
@@ -3687,10 +3709,37 @@ public:
     virtual void Flush() { /* do nothing */ }
 };
 
+class McxLog : public wxLogStderr
+{
+public:
+    typedef wxLogStderr super;
+    McxLog(FILE *fp) : wxLogStderr(fp) { }
+    ~McxLog() { }
+    void DoLogText(const wxString& msg);
+};
+
+void
+McxLog::DoLogText(const wxString& msg)
+{
+    struct timeval tv;
+    gettimeofday(&tv, 0);
+    // round tv_usec to millis
+    tv.tv_usec += 500;
+    tv.tv_usec /= 1000;
+    if (tv.tv_usec >= 1000) {
+        ++tv.tv_sec;
+        tv.tv_usec -= 1000;
+    }
+    struct tm *tmp = localtime(&tv.tv_sec);
+    char buf[4096];
+    size_t n = strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S.", tmp);
+    snprintf(&buf[n], sizeof(buf) - n, "%03u %s", tv.tv_usec, msg.c_str().AsChar());
+    super::DoLogText(buf);
+}
+
 static void
 _rotate_log(bool is_init)
 {
-    static wxFileName s_logfile_path;
     static wxFFile s_logfile;
     static wxLog *s_logstderr;
 
@@ -3699,13 +3748,9 @@ _rotate_log(bool is_init)
 
     wxString logdir = wxStandardPaths::Get().GetUserLocalDataDir();
     bool const dir_ok = wxFileName::Mkdir(logdir, 0777, wxPATH_MKDIR_FULL);
-#if 0
-    //char buf[512];
-    //sprintf(buf, "logdir is [%s] ok=%d\n",logdir.c_str(),dir_ok);                                                                                      //wxMessageBox(buf);                                                                                                                             #else
-    (void) dir_ok;
-#endif
-    wxFileName log0_txt(logdir, "log0.txt");
-    wxFileName log_txt(logdir, "log.txt");
+
+    wxFileName log0_txt(logdir, "mcx_log0.txt");
+    wxFileName log_txt(logdir, "mcx_log.txt");
 
     // skip rotation if log file does not exist or app is starting up
     // and log file is below 1MB size threshold
@@ -3738,7 +3783,7 @@ _rotate_log(bool is_init)
 
     // remove old log files
     for (int i = 1; i <= 9; i++) {
-	wxFileName fn(logdir, wxString::Format("log%d.txt", i));
+	wxFileName fn(logdir, wxString::Format("mcx_log%d.txt", i));
 	if (fn.FileExists())
 	    wxRemoveFile(fn.GetFullPath());
     }
@@ -3750,9 +3795,9 @@ _rotate_log(bool is_init)
 	goto open_ok;
     }
 
-  // open failed, try other filenames
+    // open failed, try other filenames
     for (int i = 1; i <= 9; i++) {
-	wxFileName fn(logdir, wxString::Format("log%d.txt", i));
+	wxFileName fn(logdir, wxString::Format("mcx_log%d.txt", i));
 	s_logfile.Open(fn.GetFullPath(), "a");
 	if (s_logfile.IsOpened()) {
 	    s_logfile_path = fn;
@@ -3761,7 +3806,7 @@ _rotate_log(bool is_init)
     }
 
 open_ok:
-    s_logstderr = new wxLogStderr(s_logfile.fp()); // log to logfile, or stderr if log file not opened
+    s_logstderr = new McxLog(s_logfile.fp()); // log to logfile, or stderr if log file not opened
 
     // insert crash dump to log
     {
@@ -3790,9 +3835,15 @@ open_ok:
     // start logging to file
     wxLog::SetActiveTarget(s_logstderr);
 
-    MSG("MCX " VERSION " log %s done %s",
-	is_init ? "init" : "rotate",
-	wxDateTime::Now().Format().c_str());
+    MSG("MCX " VERSION " log %s done",
+	is_init ? "init" : "rotate");
+}
+
+static void
+_init_log()
+{
+    wxLog::DisableTimestamp();
+    _rotate_log(true);
 }
 
 bool
@@ -3822,11 +3873,12 @@ McxApp::OnInit()
     wxString vals;
     wxConfig::Get()->Read("IntVals", &vals, "7,14,28,56");
     _init_int_vals(vals);
+    _init_int_val_selections(s_int_vals[0].val);
 
     frame->Show(true);
     SetTopWindow(frame);
 
-    _rotate_log(true);
+    _init_log();
 
     _start_reader_thread();
 
