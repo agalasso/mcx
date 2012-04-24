@@ -4,6 +4,7 @@
 #endif
 
 #include "mcxcomm.h"
+#include "mcx.h"
 
 #define SERIALPORT_NAME_LEN 32
 #define SERIALPORT_BUFSIZE 4096
@@ -160,7 +161,7 @@ SerialPort::OpenDevice(const char *devname, const SerialPort_DCS& dcs)
                        NULL);
 
     if (m_fd == INVALID_HANDLE_VALUE) {
-        INFO("%s CreateFile(%s) returned invalid file handle", __FUNCTION__, devname);
+        MSG("%s CreateFile(%s) returned invalid file handle", __FUNCTION__, devname);
         return -1;
     }
 
