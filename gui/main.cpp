@@ -3842,6 +3842,7 @@ open_ok:
 static void
 _init_log()
 {
+    wxLog::SetVerbose(true);
     wxLog::DisableTimestamp();
     _rotate_log(true);
 }
@@ -3849,10 +3850,10 @@ _init_log()
 bool
 McxApp::OnInit()
 {
-    wxLog::SetVerbose(true);
-
     SetAppName("MCXControl");
     SetVendorName("adgsoftware");
+
+    _init_log();
 
     s_cfg_lock = new wxMutex();
 
@@ -3877,8 +3878,6 @@ McxApp::OnInit()
 
     frame->Show(true);
     SetTopWindow(frame);
-
-    _init_log();
 
     _start_reader_thread();
 

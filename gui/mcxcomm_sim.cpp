@@ -5,6 +5,7 @@
 # include "wx/wx.h"
 #endif
 
+#include "mcx.h"
 #include "crc16.h"
 
 #include <stdlib.h>
@@ -41,6 +42,7 @@ _get(msg *msg)
 bool
 mcxcomm_init()
 {
+    VERBOSE("%s",__FUNCTION__);
     return true;
 }
 
