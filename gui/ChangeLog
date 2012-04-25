@@ -1,6 +1,6 @@
 Version 0.2 - minor updates
 	* Remember integration selections across sessions
-	* Log to a rotated log file
+	* Log diagnostic info to a log file
 	* Add a link to the log file directory in the About Box
 	* Fix a bug where AGC settings could be sent to the camera unnecessarily
 

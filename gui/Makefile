@@ -9,6 +9,7 @@ ifeq ($(UNAME_O), Msys)
   EXEEXT := .exe
   ZIP := /c/cygwin/bin/zip.exe
   WXLDFLAGS = -static
+  MAKENSIS = "/c/Program Files (x86)/NSIS/makensis.exe"
 else ifeq ($(UNAME_O), GNU/Linux)
   OS := linux
   WX := /opt/wxWidgets-2.9.3
@@ -60,7 +61,19 @@ run: mcx$(EXEEXT)
 libgcc_s_dw2-1.dll: /mingw/bin/libgcc_s_dw2-1.dll
 	cp $^ $@
 
+ifeq ($(OS), win)
+
+mcx_setup.exe: mcx.nsi mcx$(EXEEXT) dso.mcx lunar.mcx planetary.mcx solar.mcx
+	strip mcx$(EXEEXT)
+	$(MAKENSIS) $<
+
+endif
+
 zip: mcx$(EXEEXT) dso.mcx lunar.mcx planetary.mcx solar.mcx
 	strip mcx$(EXEEXT)
 	rm -f mcx-$(VERSION).zip
 	$(ZIP) mcx-$(VERSION).zip $^
+
+upload:
+	mv mcx_setup.exe mcx_setup-$(VERSION).exe
+	scp ChangeLog mcx_setup-$(VERSION).exe andy@fred:/var/www/mcx/
