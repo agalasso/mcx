@@ -128,7 +128,7 @@ static void (*s_fsm_cam_uptodate_cb)();
 static wxTimer *s_deferred_evt_timer;
 static wxTimer *s_fsm_timer;
 static bool s_fsm_timeout;
-static bool s_fsm_send_cnt;
+static unsigned int s_fsm_send_cnt;
 static wxTimer *s_cmd_delay_timer;
 static bool s_cmd_delay_expired;
 static ReaderThread *s_reader;
@@ -1023,7 +1023,8 @@ gen_cmds(const Camera& a, const Camera& b)
     }
     if (b.zoomLevel != a.zoomLevel) {
 	// set zoomLevel
-	emit2(0x1f, 1, b.zoomLevel);
+	u8 buf[2] = { 0, b.zoomLevel };
+	emit2(0x1f, 1, &buf[0], sizeof(buf));
     }
 }
 
@@ -2850,12 +2851,18 @@ MainFrameD::zoomUpdated()
   m_zoomVal->SetLabel(sval[p]);
 }
 
+static int
+_zoom_ctrl_val(u8 zoom_level)
+{
+    return (zoom_level / 0x10) + 1;
+}
+
 void
 MainFrameD::zoomScroll(wxScrollEvent& event)
 {
   zoomUpdated();
 
-  int const val[] = { -1, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+  int const val[] = { -1, 0, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80 };
 
   int const p = event.GetPosition();
   wxASSERT(p >= 0 && p < lengthof(val));
@@ -3136,7 +3143,7 @@ MainFrameD::InitControls(Camera *cam)
     dewRemovalUpdated();
 
     if (cam->zoom) {
-	m_zoom->SetValue(cam->zoomLevel + 1); // 0 = Off
+	m_zoom->SetValue(_zoom_ctrl_val(cam->zoomLevel));
     }
     else {
 	cam->zoomLevel = 0;

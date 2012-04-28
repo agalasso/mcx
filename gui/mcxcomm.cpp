@@ -69,6 +69,14 @@ mcxcmd_get(msg *msg, u8 item, u8 subitem, u8 subsubitem)
     __init_cmd(msg, CMD_GET, item, &data[0], sizeof(data));
 }
 
+static bool
+_cmdrsp_ok(const msg *msg)
+{
+    return msg->cmdrsp == RSP_OK ||
+        msg->cmdrsp == RSP_NE2 ||
+        msg->cmdrsp == 0xa9;       // zoom responds with this sometimes?
+}
+
 int
 mcxcmd_validate(const msg *msg)
 {
@@ -79,9 +87,7 @@ mcxcmd_validate(const msg *msg)
         ret = -1;
     }
 
-    if (msg->cmdrsp != RSP_OK &&
-        /* msg->cmdrsp != RSP_NE1 && */
-        msg->cmdrsp != RSP_NE2)
+    if (!_cmdrsp_ok(msg))
     {
         WARN("bad cmdrsp 0x%x", msg->cmdrsp);
         ret = -2;

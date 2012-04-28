@@ -1,3 +1,7 @@
+Version 0.3 - bug fix
+	* Zoom was not working at all, fixed it
+	* Fix problem resending commands whan camera is hung
+
 Version 0.2 - minor updates
 	* Remember integration selections across sessions
 	* Log diagnostic info to a log file
