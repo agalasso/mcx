@@ -1,4 +1,4 @@
-VERSION = 0.3
+VERSION = 0.4
 
 UNAME_O = $(shell uname -o)
 ifeq ($(UNAME_O), Msys)
@@ -63,9 +63,12 @@ libgcc_s_dw2-1.dll: /mingw/bin/libgcc_s_dw2-1.dll
 
 ifeq ($(OS), win)
 
-mcx_setup.exe: mcx.nsi mcx$(EXEEXT) dso.mcx lunar.mcx planetary.mcx solar.mcx
+mcx_setup.exe: mcx.nsi mcx$(EXEEXT) LICENSE.txt dso.mcx lunar.mcx planetary.mcx solar.mcx
 	strip mcx$(EXEEXT)
 	$(MAKENSIS) $<
+
+mcx_setup-$(VERSION).exe: mcx_setup.exe
+	cp $^ $@
 
 endif
 
@@ -74,6 +77,5 @@ zip: mcx$(EXEEXT) dso.mcx lunar.mcx planetary.mcx solar.mcx
 	rm -f mcx-$(VERSION).zip
 	$(ZIP) mcx-$(VERSION).zip $^
 
-upload:
-	mv mcx_setup.exe mcx_setup-$(VERSION).exe
+upload: mcx_setup-$(VERSION).exe
 	scp ChangeLog mcx_setup-$(VERSION).exe andy@fred:/var/www/mcx/

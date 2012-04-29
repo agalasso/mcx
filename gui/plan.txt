@@ -1,9 +1,7 @@
 TODO
   bugs:
      stop didn't stop when re-sending
-  logging
   x-y control for APC and R/B
-  installer - win
   installer - linux
   blc
   save settings to camera?
@@ -12,6 +10,10 @@ TODO
      0x20,0 "Exit item, PRESET setting"  - revert to factory defaults
 
 done:
+  single instance
+  add license to installer
+  installer - win
+  logging
   resolve COMMAND_DELAY_MS vs INT_CAPTURE_DELAY_MS - test it
   on exit try to send sync=int
   remember last N int values

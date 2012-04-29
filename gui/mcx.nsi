@@ -70,7 +70,18 @@ FunctionEnd
 ;--------------------------------
 ;Pages
 
-;  !insertmacro MUI_PAGE_LICENSE "${NSISDIR}\Docs\Modern UI\License.txt"
+;MUI_WELCOMEPAGE_TITLE title
+;Title to display on the top of the page.
+;MUI_WELCOMEPAGE_TITLE_3LINES
+;Extra space for the title area.
+!define MUI_WELCOMEPAGE_TEXT "This wizard will guide you through the installation of MallinCam Control.\r\n\r\nPress Next to continue."
+;Text to display on the page.
+
+  !insertmacro MUI_PAGE_WELCOME
+
+  !define MUI_LICENSEPAGE_CHECKBOX
+  !insertmacro MUI_PAGE_LICENSE "LICENSE.txt"
+
 ;  !insertmacro MUI_PAGE_COMPONENTS
   !insertmacro MUI_PAGE_DIRECTORY
 
@@ -122,6 +133,7 @@ Section "Dummy Section" SecDummy
   ;ADD YOUR OWN FILES HERE...
 
   File mcx.exe
+  File LICENSE.txt
   File dso.mcx
   File lunar.mcx
   File planetary.mcx
@@ -194,6 +206,7 @@ Section "Uninstall"
   ;ADD YOUR OWN FILES HERE...
 
   Delete "$INSTDIR\mcx.exe"
+  Delete "$INSTDIR\LICENSE.txt"
   Delete "$INSTDIR\*.mcx"
   Delete "$INSTDIR\Uninstall.exe"
   RMDir "$INSTDIR"

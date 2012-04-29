@@ -4,9 +4,10 @@
 #endif
 
 #include "wx/config.h"
-#include "wx/regex.h"
-#include "wx/stdpaths.h"
 #include "wx/ffile.h"
+#include "wx/regex.h"
+#include "wx/snglinst.h"
+#include "wx/stdpaths.h"
 
 #include "mcx.h"
 #include "mcxgui.h"
@@ -17,6 +18,10 @@
 #include <sstream>
 #include <set>
 #include <sys/time.h>
+
+static wxSingleInstanceChecker *s_instance_checker;
+
+#define APP_NAME "MCXControl"
 
 #define lengthof(a) (sizeof(a)/sizeof((a)[0]))
 
@@ -3857,7 +3862,15 @@ _init_log()
 bool
 McxApp::OnInit()
 {
-    SetAppName("MCXControl");
+    { // suppress messages about stale lock file
+        wxLogNull logNo;
+        s_instance_checker = new wxSingleInstanceChecker("." APP_NAME);
+    }
+
+    if (s_instance_checker->IsAnotherRunning())
+        return false;
+
+    SetAppName(APP_NAME);
     SetVendorName("adgsoftware");
 
     _init_log();
@@ -3899,6 +3912,11 @@ McxApp::OnExit()
 
     // save int values
     wxConfig::Get()->Write("IntVals", _int_vals_str());
+
+    if (s_instance_checker) {
+        delete s_instance_checker;
+        s_instance_checker = 0;
+    }
 
     return 0;
 //  return inherited::OnExit(); // todo
