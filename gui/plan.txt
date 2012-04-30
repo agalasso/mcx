@@ -10,6 +10,7 @@ TODO
      0x20,0 "Exit item, PRESET setting"  - revert to factory defaults
 
 done:
+  disable zoom when integration on
   single instance
   add license to installer
   installer - win

@@ -1235,6 +1235,7 @@ public:
     void tecLevelUpdated();
     void dewRemovalUpdated();
     void zoomUpdated();
+    bool forceZoomOff();
 
     void InitControls(Camera *cam);
 };
@@ -2030,15 +2031,23 @@ _update_int_time()
 static void
 _int_init1(bool *done)
 {
+    MainFrameD *const win = _win();
+
     // setup for integration
 
-    _win()->m_intBtn->SetLabel("Stop");
+    // force zoom off
+    bool zoom_was_on = win->forceZoomOff();
+
+    win->m_intBtn->SetLabel("Stop");
 
     _enable_controls(EN_DISABLE_FOR_INT);
 
     __update_int_time();
     s_int_stop_clicked = false;
     s_int_state = INT_INIT2;
+
+    if (zoom_was_on)
+        *done = true;
 }
 
 inline static bool
@@ -3414,7 +3423,7 @@ MainFrameD::ccClicked(wxCommandEvent& event)
 void
 MainFrameD::sleepClicked(wxCommandEvent& event)
 {
-    VERBOSE("%s id=%d", __FUNCTION__);
+    VERBOSE("%s", __FUNCTION__);
 
     s_agc_wait_state = AGC_PARK_INIT;
     _do_camera_fsm();
@@ -3441,6 +3450,31 @@ _shell_open(const wxString& loc)
 #endif
 }
 
+static void
+_show_license(wxWindow *parent)
+{
+    wxDialog *d = new wxDialog(parent, wxID_ANY, wxT("MallinCam Control License"),
+                               wxDefaultPosition, wxDefaultSize,
+                               wxCLOSE_BOX|wxDEFAULT_DIALOG_STYLE);
+
+    d->SetSizeHints( wxDefaultSize, wxDefaultSize );
+
+    wxBoxSizer *bSizer = new wxBoxSizer(wxVERTICAL);
+
+    wxHtmlWindow *h = new wxHtmlWindow(d, wxID_ANY, wxDefaultPosition, wxSize(600, 400), 0);
+    h->LoadPage("LICENSE.txt");
+    bSizer->Add(h, 0, wxALL, 5);
+
+    d->SetSizer(bSizer);
+    d->Layout();
+    bSizer->Fit(d);
+
+    d->Centre(wxBOTH);
+
+    d->ShowModal();
+    delete d;
+}
+
 void
 AboutDialogD::LinkClicked(wxHtmlLinkEvent& event)
 {
@@ -3448,6 +3482,8 @@ AboutDialogD::LinkClicked(wxHtmlLinkEvent& event)
 
     if (href == "showlog")
         _shell_open(s_logfile_path.GetPath());
+    else if (href == "license")
+        _show_license(this);
     else
         _shell_open(href);
 }
@@ -3472,9 +3508,19 @@ MainFrameD::AboutClicked(wxCommandEvent& event)
 "<center>Written by</center>"
 "<center>Andy Galasso &lt;andy.galasso@gmail.com&gt;</center>"
 "<br>"
-"<br>"
 "<hr>"
-"<small><a href=\"showlog\">Log Files</a></small>"
+"<table style=\" text-align: left; width: 100%;\" cellpadding=\"2\"cellspacing=\"2\">"
+"<tbody>"
+"<tr>"
+"<td style=\"vertical-align: top; text-align: center;\"><small><a href=\"showlog\">Log Files</a></small>"
+"</td>"
+"<td style=\"vertical-align: top;\"><br>"
+"</td>"
+"<td style=\"vertical-align: top; text-align: center;\"><small><a href=\"license\">License</a></small>"
+"</td>"
+"</tr>"
+"</tbody>"
+"</table>"
 "</html>");
 
     dlg->ShowModal();
@@ -3588,6 +3634,18 @@ MainFrameD::OnMcxMsg(McxMsgEvent& event)
     }
 
     _do_camera_fsm();
+}
+
+bool
+MainFrameD::forceZoomOff()
+{
+    if (m_zoom->GetValue() == 0)
+        return false;
+
+    m_zoom->SetValue(0);
+    wxScrollEvent ev(wxEVT_SCROLL_TOP);
+    m_zoom->GetEventHandler()->ProcessEvent(ev);
+    return true;
 }
 
 void

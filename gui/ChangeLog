@@ -1,3 +1,8 @@
+Version 0.4 - minor updates
+	* add license to Windows installer and in About dialog
+	* only a single instance of the program can run
+	* force zoom off when integrating per Rock's instructions
+
 Version 0.3 - bug fix
 	* Zoom was not working at all, fixed it
 	* Fix problem resending commands whan camera is hung
