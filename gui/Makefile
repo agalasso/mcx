@@ -29,7 +29,7 @@ WXLD = $(shell $(WXCONFIG) --ld)
 all: mcx$(EXEEXT)
 
 clean:
-	 rm -f mcx$(EXEEXT) *.o mcx.res *.zip
+	 rm -f mcx$(EXEEXT) *.o mcx.res *.zip mcx_setup.exe
 
 fb:
 	/home/andy/Incoming/wxformbuilder/trunk/output/bin/wxformbuilder MCXx.fbp
