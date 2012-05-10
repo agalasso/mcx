@@ -66,12 +66,14 @@ mcxcomm_send_enq()
     msg msg;
     msg.stx = ACK;
     _put(&msg);
+    return true;
 }
 
 bool
 mcxcomm_send_ack()
 {
     // nothing
+    return true;
 }
 
 static int s_cnt = 1;
