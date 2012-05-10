@@ -1,3 +1,8 @@
+Version 0.5 - bug fix
+	* fix problem with controls not getting initialzed at program start
+	* Linux: allow specifying a serial port device on the command-line
+	* enforce 60 minute max integration period
+
 Version 0.4 - minor updates
 	* add license to Windows installer and in About dialog
 	* only a single instance of the program can run

@@ -3,6 +3,7 @@
 # include "wx/wx.h"
 #endif
 
+#include "wx/cmdline.h"
 #include "wx/config.h"
 #include "wx/ffile.h"
 #include "wx/regex.h"
@@ -41,83 +42,85 @@ DEFINE_EVENT_TYPE(EVT_MCX_MSG)
 
 class McxApp : public wxApp
 {
-  typedef wxApp inherited;
+    typedef wxApp inherited;
 public:
-  bool OnInit();
-  int OnExit();
+    bool OnInit();
+    int OnExit();
+    void OnInitCmdLine(wxCmdLineParser& parser);
+    bool OnCmdLineParsed(wxCmdLineParser& parser);
 };
 DECLARE_APP(McxApp)
 IMPLEMENT_APP(McxApp)
 
 enum {
-  ID_DEFERRED_EVT_TIMER = 1,
-  ID_FSM_TIMER,
-  ID_CMD_DELAY_TIMER,
-  ID_INT_TIMER,
-  ID_AGC_TIMER,
+    ID_DEFERRED_EVT_TIMER = 1,
+    ID_FSM_TIMER,
+    ID_CMD_DELAY_TIMER,
+    ID_INT_TIMER,
+    ID_AGC_TIMER,
 };
 
 enum EnableType {
-  EN_DISABLE,
-  EN_DISABLE_FOR_INT,
-  EN_ENABLE_ALL,
+    EN_DISABLE,
+    EN_DISABLE_FOR_INT,
+    EN_ENABLE_ALL,
 };
 
 enum {
-  DEFERRED_EVENT_INTERVAL = 1000, // milliseconds
+    DEFERRED_EVENT_INTERVAL = 1000, // milliseconds
 
-  ACK_TIMEOUT_MS = 1000,
-  RESPONSE_TIMEOUT_MS = 3000,
-  COMMAND_DELAY_MS = 175,
-  INT_CAPTURE_DELAY_MS = 175,
+    ACK_TIMEOUT_MS = 1000,
+    RESPONSE_TIMEOUT_MS = 3000,
+    COMMAND_DELAY_MS = 175,
+    INT_CAPTURE_DELAY_MS = 175,
 
-  MAX_RETRIES = 10,
+    MAX_RETRIES = 10,
 
-  MINUTES = 60 * 1000,
+    MINUTES = 60 * 1000,
 
-  AGC_WAIT_MS = 3 * MINUTES, // how long to wait after agc change
-  PARK_WAIT_MS = 1 * MINUTES, // how long to wait to shutdown camera
+    AGC_WAIT_MS = 3 * MINUTES, // how long to wait after agc change
+    PARK_WAIT_MS = 1 * MINUTES, // how long to wait to shutdown camera
 };
 
 enum CameraState {
-  CAM_INIT,
-  CAM_DISCONNECTED,
-  CAM_DISCOVER,
-  CAM_DISCOVERING,
-  CAM_READING1,
-  CAM_READING2,
-  CAM_READING3,
-  CAM_READING4,
-  CAM_SENDING1,
-  CAM_SENDING2,
-  CAM_SENDING3,
-  CAM_DELAY,
-  CAM_UPTODATE,
+    CAM_INIT,
+    CAM_DISCONNECTED,
+    CAM_DISCOVER,
+    CAM_DISCOVERING,
+    CAM_READING1,
+    CAM_READING2,
+    CAM_READING3,
+    CAM_READING4,
+    CAM_SENDING1,
+    CAM_SENDING2,
+    CAM_SENDING3,
+    CAM_DELAY,
+    CAM_UPTODATE,
 };
 
 enum IntState {
-  INT_STOPPED,
-  INT_INIT1,
-  INT_INIT2,
-  INT_INT1,
-  INT_INT2,
-  INT_CAPTURE1,
-  INT_CAPTURE2,
-  INT_STOP,
+    INT_STOPPED,
+    INT_INIT1,
+    INT_INIT2,
+    INT_INT1,
+    INT_INT2,
+    INT_CAPTURE1,
+    INT_CAPTURE2,
+    INT_STOP,
 };
 
 enum AgcState {
-  AGC_STABLE,
-  AGC_WAIT_INIT,
-  AGC_WAIT_INIT_NOWAIT,
-  AGC_WAIT1,
-  AGC_WAIT2,
-  AGC_WAIT3,
-  AGC_CLEANUP,
-  // park camera states
-  AGC_PARK_INIT,
-  AGC_PARK_WAIT,
-  AGC_PARK_DONE,
+    AGC_STABLE,
+    AGC_WAIT_INIT,
+    AGC_WAIT_INIT_NOWAIT,
+    AGC_WAIT1,
+    AGC_WAIT2,
+    AGC_WAIT3,
+    AGC_CLEANUP,
+    // park camera states
+    AGC_PARK_INIT,
+    AGC_PARK_WAIT,
+    AGC_PARK_DONE,
 };
 
 class ReaderThread;
@@ -166,7 +169,8 @@ enum UpdateWhen {
 
 struct Config
 {
-    unsigned int cfg_serial_port;
+    unsigned int cfg_serial_port; // com port number
+    wxString cfg_device; // command-line device name (override)
 };
 static wxMutex *s_cfg_lock;
 static Config s_cfg;
@@ -492,7 +496,7 @@ __load_cam(Camera *cam, const char *filename)
 
 	if (strcmp(name, "blcArea") == 0) {
 	    u8 v[6];
-	    if (sscanf(val, "%u %u %u %u %u %u", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]) != 6)
+	    if (sscanf(val, "%hhu %hhu %hhu %hhu %hhu %hhu", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]) != 6)
 		goto out;
 	    for (unsigned int i = 0; i < 6; i++)
 		cam->blcArea[i] = v[i];
@@ -512,7 +516,7 @@ __load_cam(Camera *cam, const char *filename)
 #define M(m) do { \
 	    if (strcmp(name, "mask." #m) == 0) { \
 		u8 v[5]; \
-		if (sscanf(val, "%u %u %u %u %u", &v[0], &v[1], &v[2], &v[3], &v[4]) != 5) \
+		if (sscanf(val, "%hhu %hhu %hhu %hhu %hhu", &v[0], &v[1], &v[2], &v[3], &v[4]) != 5) \
 		    goto out; \
 		cam->mask[m].on = v[0]; \
 		for (unsigned int i = 0; i < 4; i++) \
@@ -545,7 +549,7 @@ __load_cam(Camera *cam, const char *filename)
 
 	if (strcmp(name, "tecArea") == 0) {
 	    u8 v[6];
-	    if (sscanf(val, "%u %u %u %u %u %u", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]) != 6)
+	    if (sscanf(val, "%hhu %hhu %hhu %hhu %hhu %hhu", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]) != 6)
 		goto out;
 	    for (unsigned int i = 0; i < 6; i++)
 		cam->tecArea[i] = v[i];
@@ -1052,11 +1056,22 @@ struct McxMsgEvent : public wxNotifyEvent
 };
 
 static wxString
-_port_name(unsigned int port_nr)
+_port_name(unsigned int port_nr, const wxString& port_dev)
 {
+    if (!port_dev.IsEmpty())
+        return port_dev;
+
+#if defined(__WXMSW__)
     char buf[16];
     sprintf(buf, "COM%u", port_nr);
     return wxString(buf);
+#elif defined(__WXGTK__)
+    char buf[20];
+    sprintf(buf, "/dev/ttyUSB%u", port_nr - 1);
+    return wxString(buf);
+#else
+# error "missing _port_name impl"
+#endif
 }
 
 static unsigned int
@@ -1084,7 +1099,7 @@ ReaderThread::Connect()
 {
     while (true) {
 	unsigned int port_nr = _cfg_get_port();
-	wxString port = _port_name(port_nr);
+	wxString port = _port_name(port_nr, s_cfg.cfg_device);
 
 	bool connected = mcxcomm_connect(port.c_str());
 
@@ -1485,7 +1500,7 @@ _cam_init(bool *done)
 {
     _enable_controls(EN_DISABLE);
 
-    status("Connecting to camera on " + _port_name(s_cfg.cfg_serial_port));
+    status("Connecting to camera on " + _port_name(s_cfg.cfg_serial_port, s_cfg.cfg_device));
 
     s_reader_connected = false;
     s_camera_state = CAM_DISCONNECTED;
@@ -1716,6 +1731,8 @@ _cam_reading4(bool *done)
 	    // when window created.
 	    _clear_buffered_commands();
 #endif
+            // summary responses filled cam0, so copy into cam1
+            s_cam1 = s_cam0;
 	    _init_fixed_vals(&s_cam1);
 	    _dnotify();
 	    s_fsm_cam_uptodate_cb = &_init_cmds_done;
@@ -2013,7 +2030,13 @@ __update_int_time()
 
     if (i < 3) {
         i = 3;
+        s = "3";
         win->m_int->SetValue("3");
+    }
+    else if (i > 3600) {
+        i = 3600;
+        s = "60:00";
+        win->m_int->SetValue("60:00");
     }
 
     _update_int_hist(s, i);
@@ -3803,7 +3826,7 @@ McxLog::DoLogText(const wxString& msg)
     struct tm *tmp = localtime(&tv.tv_sec);
     char buf[4096];
     size_t n = strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S.", tmp);
-    snprintf(&buf[n], sizeof(buf) - n, "%03u %s", tv.tv_usec, msg.c_str().AsChar());
+    snprintf(&buf[n], sizeof(buf) - n, "%03lu %s", tv.tv_usec, msg.c_str().AsChar());
     super::DoLogText(buf);
 }
 
@@ -3920,9 +3943,16 @@ _init_log()
 bool
 McxApp::OnInit()
 {
+    // set verbose false before cmdline parsing in OnInit()
+//    wxLog::SetVerbose(false);
+
+    bool const ret = inherited::OnInit();
+    if (!ret)
+	return ret;
+
     { // suppress messages about stale lock file
         wxLogNull logNo;
-        s_instance_checker = new wxSingleInstanceChecker("." APP_NAME);
+        s_instance_checker = new wxSingleInstanceChecker("." APP_NAME ".pid");
     }
 
     if (s_instance_checker->IsAnotherRunning())
@@ -3930,6 +3960,13 @@ McxApp::OnInit()
 
     SetAppName(APP_NAME);
     SetVendorName("adgsoftware");
+
+#ifndef __WXMSW__
+    wxConfigBase *const config =
+        new wxFileConfig(wxEmptyString, wxEmptyString, wxEmptyString, wxEmptyString,
+                         wxCONFIG_USE_LOCAL_FILE | wxCONFIG_USE_SUBDIR);
+    wxConfig::Set(config);
+#endif
 
     _init_log();
 
@@ -3971,6 +4008,10 @@ McxApp::OnExit()
     // save int values
     wxConfig::Get()->Write("IntVals", _int_vals_str());
 
+#ifndef __WXMSW__
+    wxConfig::Get()->Flush();
+#endif
+
     if (s_instance_checker) {
         delete s_instance_checker;
         s_instance_checker = 0;
@@ -3978,4 +4019,41 @@ McxApp::OnExit()
 
     return 0;
 //  return inherited::OnExit(); // todo
+}
+
+void
+McxApp::OnInitCmdLine(wxCmdLineParser& parser)
+{
+    inherited::OnInitCmdLine(parser);
+
+    // command line options
+    static const wxCmdLineEntryDesc cmdLineDesc[] = {
+	{
+	    wxCMD_LINE_OPTION,
+	    "d",
+	    "device",
+	    "serial port device",
+	    wxCMD_LINE_VAL_STRING,
+            0
+	},
+
+	// terminator
+	{ wxCMD_LINE_NONE },
+    };
+
+    parser.SetDesc(cmdLineDesc);
+}
+
+bool
+McxApp::OnCmdLineParsed(wxCmdLineParser& parser)
+{
+    bool ret = inherited::OnCmdLineParsed(parser);
+    if (!ret)
+        return ret;
+
+    wxString device;
+    if (parser.Found("d", &device))
+	s_cfg.cfg_device = device;
+
+    return true;
 }

@@ -1,4 +1,4 @@
-VERSION = 0.4
+VERSION = 0.5
 
 UNAME_O = $(shell uname -o)
 ifeq ($(UNAME_O), Msys)
