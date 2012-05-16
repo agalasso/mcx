@@ -191,7 +191,7 @@ SerialPort::OpenDevice(const char *devname, const SerialPort_DCS& dcs)
     //                       enabled, it is an error for the application
     //                       to adjust the line by using the
     //                       EscapeCommFunction function.
-    dcb.fDtrControl = DTR_CONTROL_DISABLE;
+    dcb.fDtrControl = DTR_CONTROL_ENABLE;
 
     // Specifies the RTS flow control. If this value is zero, the
     // default is RTS_CONTROL_HANDSHAKE. This member can be one of

@@ -42,6 +42,12 @@ _open_device(const char *devname)
         return -1;
     }
 
+    // make sure DTR is set
+    int flag = TIOCM_DTR;
+    ret = ioctl(fd, TIOCMBIS, &flag);
+    if (ret == -1)
+        WARN("ioctl(TIOCMBIS) failed");
+
     return fd;
 }
 
