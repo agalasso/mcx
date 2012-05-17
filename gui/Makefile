@@ -72,6 +72,17 @@ mcx_setup-$(VERSION).exe: mcx_setup.exe
 
 endif
 
+ifeq ($(OS), linux)
+
+mcx-$(VERSION).tar.gz: mcx LICENSE.txt dso.mcx lunar.mcx planetary.mcx solar.mcx
+	mkdir -p xxtmp/mcx-$(VERSION)
+	cp $^ xxtmp/mcx-$(VERSION)
+	strip xxtmp/mcx-$(VERSION)/mcx
+	tar cfz mcx-$(VERSION).tar.gz -C xxtmp mcx-$(VERSION)
+	rm -rf xxtmp
+
+endif
+
 zip: mcx$(EXEEXT) dso.mcx lunar.mcx planetary.mcx solar.mcx
 	strip mcx$(EXEEXT)
 	rm -f mcx-$(VERSION).zip
