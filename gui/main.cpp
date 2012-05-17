@@ -576,214 +576,214 @@ __load_cam(Camera *cam, const char *filename)
 static msg
 cmda(u8 a, const u8 *b, size_t len)
 {
-  msg msg;
-  mcxcmd_set(&msg, a, b, len);
-  return msg;
+    msg msg;
+    mcxcmd_set(&msg, a, b, len);
+    return msg;
 }
 
 static msg
 cmd(u8 a, u8 b, u8 c = 0, u8 d = 0)
 {
-  u8 data[] = { b, c, d };
-  return cmda(a, data, sizeof(data));
+    u8 data[] = { b, c, d };
+    return cmda(a, data, sizeof(data));
 }
 
 static void
 emit1(u8 a, u8 b)
 {
-  s_cmdmap[K1(a)] = cmd(a, b);
+    s_cmdmap[K1(a)] = cmd(a, b);
 }
 
 static void
 emit1(u8 a, const u8 *b, size_t len)
 {
-  s_cmdmap[K1(a)] = cmda(a, b, len);
+    s_cmdmap[K1(a)] = cmda(a, b, len);
 }
 
 static void
 emit2(u8 a, u8 b, u8 c)
 {
-  s_cmdmap[K2(a, b)] = cmd(a, b, c);
+    s_cmdmap[K2(a, b)] = cmd(a, b, c);
 }
 
 static void
 emit2(u8 a, u8 b, const u8 *ary, size_t len)
 {
-  u8 buf[DATA_LEN];
-  buf[0] = b;
-  if (len > DATA_LEN - 1)
-    len = DATA_LEN - 1;
-  for (unsigned int i = 0; i < len; i++)
-    buf[i + 1] = ary[i];
-  s_cmdmap[K2(a, b)] = cmda(a, buf, len + 1);
+    u8 buf[DATA_LEN];
+    buf[0] = b;
+    if (len > DATA_LEN - 1)
+        len = DATA_LEN - 1;
+    for (unsigned int i = 0; i < len; i++)
+        buf[i + 1] = ary[i];
+    s_cmdmap[K2(a, b)] = cmda(a, buf, len + 1);
 }
 
 static void
 emit3(u8 a, u8 b, u8 c, u8 d)
 {
-  s_cmdmap[K3(a, b, c)] = cmd(a, b, c, d);
+    s_cmdmap[K3(a, b, c)] = cmd(a, b, c, d);
 }
 
 static void
 _gen_title(u8 *buf, const char *s)
 {
-  u8 const INVAL = 0x3f;
+    u8 const INVAL = 0x3f;
 
-  static u8 const map[] = {
-      INVAL, // NUL
-      INVAL, // SOH
-      INVAL, // STX
-      INVAL, // ETX
-      INVAL, // EOT
-      INVAL, // ENQ
-      INVAL, // ACK
-      INVAL, // BEL
+    static u8 const map[] = {
+        INVAL, // NUL
+        INVAL, // SOH
+        INVAL, // STX
+        INVAL, // ETX
+        INVAL, // EOT
+        INVAL, // ENQ
+        INVAL, // ACK
+        INVAL, // BEL
 
-      INVAL, // BS
-      INVAL, // HT
-      INVAL, // LF
-      INVAL, // VT
-      INVAL, // FF
-      INVAL, // CR
-      INVAL, // SO
-      INVAL, // SI
+        INVAL, // BS
+        INVAL, // HT
+        INVAL, // LF
+        INVAL, // VT
+        INVAL, // FF
+        INVAL, // CR
+        INVAL, // SO
+        INVAL, // SI
 
-      INVAL, // DLE
-      INVAL, // DC1
-      INVAL, // DC2
-      INVAL, // DC3
-      INVAL, // DC4
-      INVAL, // NAK
-      INVAL, // SYN
-      INVAL, // ETB
+        INVAL, // DLE
+        INVAL, // DC1
+        INVAL, // DC2
+        INVAL, // DC3
+        INVAL, // DC4
+        INVAL, // NAK
+        INVAL, // SYN
+        INVAL, // ETB
 
-      INVAL, // CAN
-      INVAL, // EM
-      INVAL, // SUB
-      INVAL, // ESC
-      INVAL, // FS
-      INVAL, // GS
-      INVAL, // RS
-      INVAL, // US
+        INVAL, // CAN
+        INVAL, // EM
+        INVAL, // SUB
+        INVAL, // ESC
+        INVAL, // FS
+        INVAL, // GS
+        INVAL, // RS
+        INVAL, // US
 
-      0x10, // SPACE
-      INVAL, // 21    !
-      INVAL, // 22    "
-      INVAL, // 23    #
-      INVAL, // 24    $
-      INVAL, // 25    %
-      INVAL, // 26    &
-      INVAL, // 27    '
+        0x10, // SPACE
+        INVAL, // 21    !
+        INVAL, // 22    "
+        INVAL, // 23    #
+        INVAL, // 24    $
+        INVAL, // 25    %
+        INVAL, // 26    &
+        INVAL, // 27    '
 
-      0x0b, // < // 28    (
-      0x0c, // > // 29    )
-      INVAL, // 2A    *
-      INVAL, // 2B    +
-      0x0f, // 2C    ,
-      0x0d, // 2D    -
-      0x0e, // 2E    .
-      0x6d, // 2F    /
+        0x0b, // < // 28    (
+        0x0c, // > // 29    )
+        INVAL, // 2A    *
+        INVAL, // 2B    +
+        0x0f, // 2C    ,
+        0x0d, // 2D    -
+        0x0e, // 2E    .
+        0x6d, // 2F    /
 
-      0x00, // 0
-      0x01, // 1
-      0x02, // 2
-      0x03, // 3
-      0x04, // 4
-      0x05, // 5
-      0x06, // 6
-      0x07, // 7
+        0x00, // 0
+        0x01, // 1
+        0x02, // 2
+        0x03, // 3
+        0x04, // 4
+        0x05, // 5
+        0x06, // 6
+        0x07, // 7
 
-      0x08, // 8
-      0x09, // 9
-      0x0a, // 3A    :
-      0x6b, // 3B    ;
-      0x0b, // 3C    <
-      INVAL, // 3D    =
-      0x0c, // 3E    >
-      0x50, // 3F    ?
+        0x08, // 8
+        0x09, // 9
+        0x0a, // 3A    :
+        0x6b, // 3B    ;
+        0x0b, // 3C    <
+        INVAL, // 3D    =
+        0x0c, // 3E    >
+        0x50, // 3F    ?
 
-      INVAL, // 40    @
-      0x11, // A
-      0x12, // B
-      0x13, // C
-      0x14, // D
-      0x15, // E
-      0x16, // F
-      0x17, // G
+        INVAL, // 40    @
+        0x11, // A
+        0x12, // B
+        0x13, // C
+        0x14, // D
+        0x15, // E
+        0x16, // F
+        0x17, // G
 
-      0x18, // H
-      0x19, // I
-      0x1a, // J
-      0x1b, // K
-      0x1c, // L
-      0x1d, // M
-      0x1e, // N
-      0x00, // O
+        0x18, // H
+        0x19, // I
+        0x1a, // J
+        0x1b, // K
+        0x1c, // L
+        0x1d, // M
+        0x1e, // N
+        0x00, // O
 
-      0x20, // P
-      0x21, // Q
-      0x22, // R
-      0x23, // S
-      0x24, // T
-      0x25, // U
-      0x26, // V
-      0x27, // W
+        0x20, // P
+        0x21, // Q
+        0x22, // R
+        0x23, // S
+        0x24, // T
+        0x25, // U
+        0x26, // V
+        0x27, // W
 
-      0x28, // X
-      0x29, // Y
-      0x2a, // Z
-      INVAL, // 5B    [
-      INVAL, // 5C    backslash
-      INVAL, // 5D    ]
-      INVAL, // 5E    ^
-      INVAL, // 5F    _
+        0x28, // X
+        0x29, // Y
+        0x2a, // Z
+        INVAL, // 5B    [
+        INVAL, // 5C    backslash
+        INVAL, // 5D    ]
+        INVAL, // 5E    ^
+        INVAL, // 5F    _
 
-      INVAL, // 60    backquot
-      0x51, // a
-      0x52, // b
-      0x53, // c
-      0x54, // d
-      0x55, // e
-      0x56, // f
-      0x57, // g
+        INVAL, // 60    backquot
+        0x51, // a
+        0x52, // b
+        0x53, // c
+        0x54, // d
+        0x55, // e
+        0x56, // f
+        0x57, // g
 
-      0x58, // h
-      0x59, // i
-      0x5a, // j
-      0x5b, // k
-      0x5c, // l
-      0x5d, // m
-      0x5e, // n
-      0x5f, // o
+        0x58, // h
+        0x59, // i
+        0x5a, // j
+        0x5b, // k
+        0x5c, // l
+        0x5d, // m
+        0x5e, // n
+        0x5f, // o
 
-      0x60, // p
-      0x61, // q
-      0x62, // r
-      0x63, // s
-      0x64, // t
-      0x65, // u
-      0x66, // v
-      0x67, // w
+        0x60, // p
+        0x61, // q
+        0x62, // r
+        0x63, // s
+        0x64, // t
+        0x65, // u
+        0x66, // v
+        0x67, // w
 
-      0x68, // x
-      0x69, // y
-      0x6a, // z
-      INVAL, // 7B    {
-      INVAL, // 7C    |
-      INVAL, // 7D    }
-      INVAL, // 7E    ~
-      INVAL, // DEL
-  };
+        0x68, // x
+        0x69, // y
+        0x6a, // z
+        INVAL, // 7B    {
+        INVAL, // 7C    |
+        INVAL, // 7D    }
+        INVAL, // 7E    ~
+        INVAL, // DEL
+    };
 
-  bool eos = false;
-  for (unsigned int i = 0; i < DATA_LEN - 1; i++) {
-    if (!eos && s[i] == 0)
-      eos = true;
-    char ch = eos ? ' ' : s[i];
-    if (ch > 0x7f)
-      ch = 0;
-    buf[i] = map[ch];
-  }
+    bool eos = false;
+    for (unsigned int i = 0; i < DATA_LEN - 1; i++) {
+        if (!eos && s[i] == 0)
+            eos = true;
+        char ch = eos ? ' ' : s[i];
+        if (ch > 0x7f)
+            ch = 0;
+        buf[i] = map[ch];
+    }
 }
 
 static wxString
@@ -1227,6 +1227,7 @@ public:
     void ccClicked(wxCommandEvent& event);
     void sleepClicked(wxCommandEvent& event);
     void AboutClicked(wxCommandEvent& event);
+    void writeClicked(wxCommandEvent& event);
     void statusBarLeftUp(wxMouseEvent& event);
 
     void OnTimer(wxTimerEvent& event);
@@ -3551,10 +3552,17 @@ MainFrameD::AboutClicked(wxCommandEvent& event)
 }
 
 void
+MainFrameD::writeClicked(wxCommandEvent& event)
+{
+    emit1(0x1e, 0);
+    dnotify(UPD_IMMEDIATE);
+}
+
+void
 MainFrameD::statusBarLeftUp(wxMouseEvent& event)
 {
-  s_agc_wait_cancel_clicked = true;
-  _do_camera_fsm();
+    s_agc_wait_cancel_clicked = true;
+    _do_camera_fsm();
 }
 
 void
@@ -3743,6 +3751,7 @@ MainFrameD::EnableControls(EnableType how)
     m_toolBar->EnableTool(ID_NEGATIVE, enable);
     m_toolBar->EnableTool(ID_CCD_MODE, enable);
     m_toolBar->EnableTool(ID_SLEEP, enable);
+    m_toolBar->EnableTool(ID_WRITE, enable);
 
     if (!for_int) {
 	m_int->Enable(enable);

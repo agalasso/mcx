@@ -21,6 +21,7 @@
 #include "rH.xpm"
 #include "rV.xpm"
 #include "solar.xpm"
+#include "write.xpm"
 #include "zzz.xpm"
 
 ///////////////////////////////////////////////////////////////////////////
@@ -69,6 +70,10 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	m_toolBar->AddSeparator(); 
 	
 	m_toolBar->AddTool( ID_CCD_MODE, wxT("tool"), wxBitmap( cc_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("CCD Mode"), wxT("Apply CCD Mode settings"), NULL ); 
+	
+	m_toolBar->AddSeparator(); 
+	
+	m_toolBar->AddTool( ID_WRITE, wxT("Write"), wxBitmap( write_xpm ), wxNullBitmap, wxITEM_NORMAL, wxT("Save as camera power-on defaults"), wxT("Save current settings as camera power-on defaults"), NULL ); 
 	
 	m_toolBar->AddSeparator(); 
 	
@@ -604,6 +609,7 @@ MainFrame::MainFrame( wxWindow* parent, wxWindowID id, const wxString& title, co
 	this->Connect( ID_NEGATIVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ngClicked ) );
 	this->Connect( ID_FREEZE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::fzClicked ) );
 	this->Connect( ID_CCD_MODE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ccClicked ) );
+	this->Connect( ID_WRITE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::writeClicked ) );
 	this->Connect( ID_SLEEP, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::sleepClicked ) );
 	this->Connect( ID_ABOUT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::AboutClicked ) );
 	m_senseUp->Connect( wxEVT_SCROLL_TOP, wxScrollEventHandler( MainFrame::senseUpScroll ), NULL, this );
@@ -767,6 +773,7 @@ MainFrame::~MainFrame()
 	this->Disconnect( ID_NEGATIVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ngClicked ) );
 	this->Disconnect( ID_FREEZE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::fzClicked ) );
 	this->Disconnect( ID_CCD_MODE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::ccClicked ) );
+	this->Disconnect( ID_WRITE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::writeClicked ) );
 	this->Disconnect( ID_SLEEP, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::sleepClicked ) );
 	this->Disconnect( ID_ABOUT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler( MainFrame::AboutClicked ) );
 	m_senseUp->Disconnect( wxEVT_SCROLL_TOP, wxScrollEventHandler( MainFrame::senseUpScroll ), NULL, this );

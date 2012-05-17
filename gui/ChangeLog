@@ -1,3 +1,10 @@
+Version 0.7 - minor updates
+	* added a new button to save current settings as camera power-on defaults
+	* change planetary, lunar and solar settings to use lowest TEC setting
+
+Version 0.6 - update for Green LED cameras
+	* fix comm port setup to work with RS232 adapters that require DTR line on
+
 Version 0.5 - bug fix
 	* fix problem with controls not getting initialzed at program start
 	* Linux: allow specifying a serial port device on the command-line

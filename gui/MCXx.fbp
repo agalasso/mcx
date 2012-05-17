@@ -500,6 +500,30 @@
                         <object class="toolSeparator" expanded="0">
                             <property name="permission">protected</property>
                         </object>
+                        <object class="tool" expanded="1">
+                            <property name="bitmap">Load From Embedded File; C:\MinGW\msys\1.0\home\agalasso\proj\mcx\gui\write.xpm</property>
+                            <property name="context_menu">0</property>
+                            <property name="id">ID_WRITE</property>
+                            <property name="kind">wxITEM_NORMAL</property>
+                            <property name="label">Write</property>
+                            <property name="name">m_write</property>
+                            <property name="permission">protected</property>
+                            <property name="statusbar">Save current settings as camera power-on defaults</property>
+                            <property name="tooltip">Save as camera power-on defaults</property>
+                            <event name="OnAuiToolBarBeginDrag"></event>
+                            <event name="OnAuiToolBarMiddleClick"></event>
+                            <event name="OnAuiToolBarOverflowClick"></event>
+                            <event name="OnAuiToolBarRightClick"></event>
+                            <event name="OnAuiToolBarToolDropDown"></event>
+                            <event name="OnMenuSelection"></event>
+                            <event name="OnToolClicked">writeClicked</event>
+                            <event name="OnToolEnter"></event>
+                            <event name="OnToolRClicked"></event>
+                            <event name="OnUpdateUI"></event>
+                        </object>
+                        <object class="toolSeparator" expanded="1">
+                            <property name="permission">protected</property>
+                        </object>
                         <object class="tool" expanded="0">
                             <property name="bitmap">Load From Embedded File; zzz.xpm</property>
                             <property name="context_menu">0</property>

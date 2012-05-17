@@ -60,6 +60,7 @@ class MainFrame : public wxFrame
 			ID_NEGATIVE,
 			ID_FREEZE,
 			ID_CCD_MODE,
+			ID_WRITE,
 			ID_SLEEP,
 			ID_ABOUT
 		};
@@ -132,6 +133,7 @@ class MainFrame : public wxFrame
 		virtual void ngClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void fzClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void ccClicked( wxCommandEvent& event ) { event.Skip(); }
+		virtual void writeClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void sleepClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void AboutClicked( wxCommandEvent& event ) { event.Skip(); }
 		virtual void senseUpScroll( wxScrollEvent& event ) { event.Skip(); }

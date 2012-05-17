@@ -4,12 +4,14 @@ TODO
   x-y control for APC and R/B
   installer - linux
   blc
-  save settings to camera?
-     0x1e   "Exit item, SAVE setting"    - save to camera
   restore factory defaults
      0x20,0 "Exit item, PRESET setting"  - revert to factory defaults
+  try enabling zoom in hyper mode per billk post
 
 done:
+  save settings to camera?
+     0x1e   "Exit item, SAVE setting"    - save to camera
+  moon, planet, solar: tec should be minimum
   disable zoom when integration on
   single instance
   add license to installer
