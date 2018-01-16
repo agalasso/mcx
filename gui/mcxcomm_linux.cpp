@@ -9,6 +9,7 @@
 #include <termios.h>
 #include <errno.h>
 #include <sys/select.h>
+#include <sys/ioctl.h>
 
 static int
 _open_device(const char *devname)

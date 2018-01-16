@@ -12,7 +12,7 @@ ifeq ($(UNAME_O), Msys)
   MAKENSIS = "/c/Program Files (x86)/NSIS/makensis.exe"
 else ifeq ($(UNAME_O), GNU/Linux)
   OS := linux
-  WX := /opt/wxWidgets-2.9.3
+  WX := /usr
   EXTRA_CXXFLAGS := -fPIC
   ZIP := zip
 else
