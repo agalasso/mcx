@@ -32,7 +32,7 @@ clean:
 	 rm -f mcx$(EXEEXT) *.o mcx.res *.zip mcx_setup.exe
 
 fb:
-	/home/andy/Incoming/wxformbuilder/trunk/output/bin/wxformbuilder MCXx.fbp
+	wxformbuilder MCXx.fbp
 
 mcxgui.o: mcxgui.cpp
 	$(WXCXX) -c $(CXXFLAGS) -o $@ $<
@@ -89,4 +89,4 @@ zip: mcx$(EXEEXT) dso.mcx lunar.mcx planetary.mcx solar.mcx
 	$(ZIP) mcx-$(VERSION).zip $^
 
 upload: mcx_setup-$(VERSION).exe
-	scp ChangeLog mcx_setup-$(VERSION).exe andy@fred:/var/www/mcx/
+	scp ChangeLog mcx_setup-$(VERSION).exe $(DEST)
