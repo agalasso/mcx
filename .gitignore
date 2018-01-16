@@ -3,5 +3,5 @@
 *.so
 *.dll
 *.exe
-/hello
+/hello/hello
 /gui/mcx
