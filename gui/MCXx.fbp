@@ -6676,7 +6676,7 @@
             <property name="size"></property>
             <property name="style">wxCLOSE_BOX|wxDEFAULT_DIALOG_STYLE</property>
             <property name="subclass"></property>
-            <property name="title">About Mallincam Control</property>
+            <property name="title">About MallinCam Control</property>
             <property name="toolbar_pane">0</property>
             <property name="tooltip"></property>
             <property name="validator_data_type"></property>
