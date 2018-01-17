@@ -23,4 +23,8 @@
 #define MSG(format, ...) wxLogMessage(format, ## __VA_ARGS__)
 #define VERBOSE(format, ...) wxLogVerbose(format, ## __VA_ARGS__)
 
+#ifdef _MSC_VER
+# define snprintf _snprintf
+#endif
+
 #endif

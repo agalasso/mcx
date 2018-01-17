@@ -36,7 +36,6 @@
 #include <map>
 #include <sstream>
 #include <set>
-#include <sys/time.h>
 
 static wxSingleInstanceChecker *s_instance_checker;
 
@@ -1099,9 +1098,10 @@ _port_nr(const wxString& s)
     return atoi(p + 3);
 }
 
-struct ReaderThread
+class ReaderThread
   : public wxThread
 {
+public:
     wxEvtHandler *m_evt_handler;
     volatile bool m_terminated;
     unsigned int m_port;
@@ -3841,20 +3841,7 @@ public:
 void
 McxLog::DoLogText(const wxString& msg)
 {
-    struct timeval tv;
-    gettimeofday(&tv, 0);
-    // round tv_usec to millis
-    tv.tv_usec += 500;
-    tv.tv_usec /= 1000;
-    if (tv.tv_usec >= 1000) {
-        ++tv.tv_sec;
-        tv.tv_usec -= 1000;
-    }
-    struct tm *tmp = localtime(&tv.tv_sec);
-    char buf[4096];
-    size_t n = strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S.", tmp);
-    snprintf(&buf[n], sizeof(buf) - n, "%03lu %s", tv.tv_usec, msg.c_str().AsChar());
-    super::DoLogText(buf);
+    super::DoLogText(wxDateTime::UNow().Format("%Y-%m-%d %H:%M:%S.%l ") + msg);
 }
 
 static void
