@@ -7,6 +7,7 @@ https://adgsoftware.com/mcx/
 
 Required packages
 ```
+   cmake
    libwxgtk3.0-dev
    wxformbuilder
 ```
@@ -14,4 +15,9 @@ Required packages
 `wxformbuilder` is optional, only needed if you want to modify the UX.
  
 To build:
-    `make -C mcx/gui`
+```
+mkdir build
+cd build
+cmake ..
+cmake --build .    # or: make
+```
